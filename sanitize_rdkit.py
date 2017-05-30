@@ -40,7 +40,12 @@ def main(in_fname, out_fname, error_fname, input_format, output_format):
 
             else:
 
-                wout.write(mol)
+                try:
+                    Chem.Kekulize(mol)
+                    wout.write(mol)
+                except:
+                    mol.SetProp('Sanitization_error', 'Kekulization failed')
+                    werr.write(mol)
 
     werr.close()
     wout.close()

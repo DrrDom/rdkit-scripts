@@ -25,8 +25,25 @@ def get_unspec_double_bonds(m):
 
     def check_nei_bonds(bond):
         a1, a2 = bond.GetBeginAtom(), bond.GetEndAtom()
-        if all(b.GetBondType() == Chem.BondType.SINGLE for b in a1.GetBonds() if b.GetIdx() != bond.GetIdx()) and \
-           all(b.GetBondType() == Chem.BondType.SINGLE for b in a2.GetBonds() if b.GetIdx() != bond.GetIdx()):
+        a1_bonds_single = [b.GetBondType() == Chem.BondType.SINGLE for b in a1.GetBonds() if b.GetIdx() != bond.GetIdx()]
+        a2_bonds_single = [b.GetBondType() == Chem.BondType.SINGLE for b in a2.GetBonds() if b.GetIdx() != bond.GetIdx()]
+
+        # if there are two identical substituents in one side then the bond is unsteric (no stereoisomers possible)
+        ranks = list(Chem.CanonicalRankAtoms(m, breakTies=False))
+        a1_nei = [a.GetIdx() for a in a1.GetNeighbors() if a.GetIdx() != a2.GetIdx()]
+        if len(a1_nei) == 2 and \
+                all(m.GetBondBetweenAtoms(i, a1.GetIdx()).GetBondType() == Chem.BondType.SINGLE for i in a1_nei) and \
+                ranks[a1_nei[0]] == ranks[a1_nei[1]]:
+            return False
+        a2_nei = [a.GetIdx() for a in a2.GetNeighbors() if a.GetIdx() != a1.GetIdx()]
+        if len(a2_nei) == 2 and \
+                all(m.GetBondBetweenAtoms(i, a2.GetIdx()).GetBondType() == Chem.BondType.SINGLE for i in a2_nei) and \
+                ranks[a2_nei[0]] == ranks[a2_nei[1]]:
+            return False
+
+        # if list is empty this is a terminal atom, e.g. O in C=O
+        if a1_bonds_single and a2_bonds_single and \
+                all(a1_bonds_single) and all(a2_bonds_single):
             return True
         else:
             return False
@@ -60,14 +77,6 @@ def set_double_bond_stereo(bond, value):
     a1, a2 = bond.GetBeginAtom(), bond.GetEndAtom()
     a1_bonds = tuple(b for b in a1.GetBonds() if b.GetIdx() != bond.GetIdx())
     a2_bonds = tuple(b for b in a2.GetBonds() if b.GetIdx() != bond.GetIdx())
-
-    # print('----')
-    # print(a1.GetIdx())
-    # for b in a1_bonds:
-    #     print(b.GetBondDir())
-    # print(a2.GetIdx())
-    # for b in a2_bonds:
-    #     print(b.GetBondDir())
 
     if a1_bonds and a2_bonds:   # if double bond of carbonyl one atom does not have any other bonds - skip
 
@@ -125,13 +134,6 @@ def enumerate_tetrahedral_stereo(mol):
 
 
 def enumerate_stereo(mol, mol_name, tetrahedral, double_bond, max_undef):
-
-    # print("Mol name:", mol_name)
-    #
-    # for a in mol.GetAtoms():
-    #     print(a.GetIdx(), a.GetSymbol())
-    # for b in mol.GetBonds():
-    #     print(b.GetIdx(), b.GetBondType(), b.GetBeginAtom(), b.GetEndAtom())
 
     if max_undef != -1:
         undef = 0

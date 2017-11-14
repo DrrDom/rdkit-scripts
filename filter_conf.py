@@ -6,6 +6,7 @@ import argparse
 import sys
 import pickle
 import numpy as np
+from rdkit import Chem
 from rdkit.Chem import AllChem_2   # works only in rdk_2017_3 env!!
 from read_input import read_input
 from multiprocessing import Pool
@@ -14,6 +15,8 @@ from multiprocessing import Pool
 def filter_conf(data):
     # data is a tuple (mol, mol_name)
     mol, mol_name = data
+    if noH:
+        mol = Chem.RemoveHs(mol)
     ids = [c.GetId() for c in mol.GetConformers()]
     a = AllChem_2.GetConformerRMSMatrix(mol)
     b = np.full((len(ids), len(ids)), None, dtype=float)
@@ -28,13 +31,15 @@ def filter_conf(data):
     return mol, mol_name
 
 
-def pool_init(value):
+def pool_init(value1, value2):
     global rms
-    rms = value
+    global noH
+    rms = value1
+    noH = value2
 
 
-def main(in_fname, out_fname, rms, ncpu, verbose):
-    p = Pool(ncpu, initializer=pool_init, initargs=[rms])
+def main(in_fname, out_fname, rms, noH, ncpu, verbose):
+    p = Pool(ncpu, initializer=pool_init, initargs=[rms, noH])
     with open(out_fname, 'wb') as fout:
         for i, res in enumerate(p.imap_unordered(filter_conf, read_input(in_fname), chunksize=20), 1):
             pickle.dump(res, fout, -1)
@@ -52,6 +57,8 @@ if __name__ == '__main__':
                         help='output file in PKL format with conformers filtered out according to specified RMS value.')
     parser.add_argument('-r', '--rms', required=False, default=1,
                         help='RMS value to filter out conformers.')
+    parser.add_argument('-x', '--noH', action='store_true', default=False,
+                        help='if set only heavy atoms will be used for RMS calculation.')
     parser.add_argument('-c', '--ncpu', metavar='cpu_number', default=1,
                         help='number of cpus to use for calculation. Default: 1.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -62,7 +69,8 @@ if __name__ == '__main__':
         if o == "input": in_fname = v
         if o == "output": out_fname = v
         if o == "rms": rms = float(v)
+        if o == "noH": noH = v
         if o == "ncpu": ncpu = int(v)
         if o == "verbose": verbose = v
 
-    main(in_fname, out_fname, rms, ncpu, verbose)
+    main(in_fname, out_fname, rms, noH, ncpu, verbose)

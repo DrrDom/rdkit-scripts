@@ -26,6 +26,9 @@ def map_gen_conf(args):
 
 def remove_confs(mol, energy, rms):
 
+    if energy is None and rms is None:
+        return
+
     e = []
     for conf in mol.GetConformers():
         ff = AllChem.MMFFGetMoleculeForceField(mol, AllChem.MMFFGetMoleculeProperties(mol), confId=conf.GetId())
@@ -41,11 +44,12 @@ def remove_confs(mol, energy, rms):
     kept_ids = [e[0][0]]
     remove_ids = []
 
-    for item in e[1:]:
-        if item[1] - e[0][1] <= energy:
-            kept_ids.append(item[0])
-        else:
-            remove_ids.append(item[0])
+    if energy is not None:
+        for item in e[1:]:
+            if item[1] - e[0][1] <= energy:
+                kept_ids.append(item[0])
+            else:
+                remove_ids.append(item[0])
 
     if rms is not None:
         rms_list = [(i1, i2, AllChem.GetConformerRMS(mol, i1, i2)) for i1, i2 in combinations(kept_ids, 2)]
@@ -134,9 +138,9 @@ def main():
                              'will be used or SMILES strings as names.')
     parser.add_argument('-n', '--nconf', metavar='conf_number', default=50,
                         help='number of generated conformers. Default: 50.')
-    parser.add_argument('-e', '--energy_cutoff', metavar='10', default=10,
+    parser.add_argument('-e', '--energy_cutoff', metavar='VALUE', default=None,
                         help='conformers with energy difference from the lowest found one higher than the specified '
-                             'value will be discarded. Default: 10.')
+                             'value will be discarded. Default: None.')
     parser.add_argument('-r', '--rms', metavar='rms_threshold', default=None,
                         help='only conformers with RMS higher then threshold will be kept. '
                              'Default: None (keep all conformers).')
@@ -154,7 +158,7 @@ def main():
         if o == "id_field_name": id_field_name = v
         if o == "nconf": nconf = int(v)
         if o == "ncpu": ncpu = int(v)
-        if o == "energy_cutoff": energy = float(v)
+        if o == "energy_cutoff": energy = float(v) if v is not None else None
         if o == "seed": seed = int(v)
         if o == "rms": rms = float(v) if v is not None else None
         if o == "verbose": verbose = v

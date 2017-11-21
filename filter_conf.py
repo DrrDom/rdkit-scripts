@@ -7,9 +7,18 @@ import sys
 import pickle
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import AllChem_2   # works only in rdk_2017_3 env!!
+from rdkit.Chem import AllChem
 from read_input import read_input
 from multiprocessing import Pool
+
+
+def get_matrix_best(m, diag=None):
+    cids = [c.GetId() for c in m.GetConformers()]
+    b = np.full((len(cids), len(cids)), diag, dtype=float)
+    for i in range(len(cids)):
+        for j in range(i + 1, len(cids)):
+            b[i, j] = b[j, i] = AllChem.GetBestRMS(m, m, cids[i], cids[j])
+    return b
 
 
 def filter_conf(data):
@@ -17,10 +26,8 @@ def filter_conf(data):
     mol, mol_name = data
     if noH:
         mol = Chem.RemoveHs(mol)
+    b = get_matrix_best(mol)
     ids = [c.GetId() for c in mol.GetConformers()]
-    a = AllChem_2.GetConformerRMSMatrix(mol)
-    b = np.full((len(ids), len(ids)), None, dtype=float)
-    b[np.tril_indices(len(ids), -1)] = a
     removed_ids = []
     while b.size and np.nanmin(b) < rms:
         i = np.where(b == np.nanmin(b))[0][0]
@@ -56,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', metavar='output.pkl', required=True,
                         help='output file in PKL format with conformers filtered out according to specified RMS value.')
     parser.add_argument('-r', '--rms', required=False, default=1,
-                        help='RMS value to filter out conformers.')
+                        help='RMS value to filter out conformers. Default: 1.')
     parser.add_argument('-x', '--noH', action='store_true', default=False,
                         help='if set only heavy atoms will be used for RMS calculation.')
     parser.add_argument('-c', '--ncpu', metavar='cpu_number', default=1,

@@ -12,9 +12,9 @@ from multiprocessing import Pool, cpu_count
 from read_input import read_input
 
 
-def prep_input(fname, id_field_name, tetrahedral, double_bond, max_undef):
+def prep_input(fname, id_field_name, tetrahedral, double_bond, max_attempts, max_undef):
     for mol, mol_name in read_input(fname, id_field_name=id_field_name):
-        yield mol, mol_name, tetrahedral, double_bond, max_undef
+        yield mol, mol_name, tetrahedral, double_bond, max_attempts, max_undef
 
 
 def map_enumerate_stereo(args):
@@ -107,7 +107,7 @@ def enumerate_double_bond_stereo(mol):
     return res
 
 
-def enumerate_tetrahedral_stereo(mol):
+def enumerate_tetrahedral_stereo(mol, n_attempts=0):
 
     output = []
     chiral_undef = tuple(i[0] for i in Chem.FindMolChiralCenters(mol, includeUnassigned=True) if i[1] == '?')
@@ -119,21 +119,24 @@ def enumerate_tetrahedral_stereo(mol):
     for p in product([Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW], repeat=len(chiral_undef)):
         for tag, i in zip(p, chiral_undef):
             mol.GetAtomWithIdx(i).SetChiralTag(tag)
-        AllChem.EmbedMolecule(mol)
-        try:
-            if AllChem.UFFHasAllMoleculeParams(mol):
-                AllChem.UFFOptimizeMolecule(mol, maxIters=10)
-                num += 1
-                output.append(deepcopy(Chem.RemoveHs(mol)))
-            else:
-                sys.stderr.write('No UFF parameters for %s\n' % (Chem.MolToSmiles(Chem.RemoveHs(mol))))
-        except ValueError:
+        conf_id = AllChem.EmbedMolecule(mol, maxAttempts=n_attempts)
+        if conf_id != -1:   # -1 means attempt was failed
+            try:
+                if AllChem.UFFHasAllMoleculeParams(mol):
+                    AllChem.UFFOptimizeMolecule(mol, maxIters=10)
+                    num += 1
+                    output.append(deepcopy(Chem.RemoveHs(mol)))
+                else:
+                    sys.stderr.write('No UFF parameters for %s\n' % (Chem.MolToSmiles(Chem.RemoveHs(mol))))
+            except ValueError:
+                continue
+        else:
             continue
 
     return output
 
 
-def enumerate_stereo(mol, mol_name, tetrahedral, double_bond, max_undef):
+def enumerate_stereo(mol, mol_name, tetrahedral, double_bond, max_attempts, max_undef):
 
     if max_undef != -1:
         undef = 0
@@ -150,7 +153,7 @@ def enumerate_stereo(mol, mol_name, tetrahedral, double_bond, max_undef):
     if tetrahedral:
         tmp = []
         for m in mols:
-            tmp.extend(enumerate_tetrahedral_stereo(m))
+            tmp.extend(enumerate_tetrahedral_stereo(m, max_attempts))
         mols = tmp
 
     # filter possible duplicates and keep the order, not sure whether it is really needed
@@ -163,7 +166,7 @@ def enumerate_stereo(mol, mol_name, tetrahedral, double_bond, max_undef):
     return [(smi, "%s_%i" % (mol_name, i+1)) for i, smi in enumerate(output)]
 
 
-def main_params(in_fname, out_fname, tetrahedral, double_bond, max_undef, id_field_name, ncpu, verbose):
+def main_params(in_fname, out_fname, tetrahedral, double_bond, max_attempts, max_undef, id_field_name, ncpu, verbose):
 
     if out_fname is not None:
         fout = open(out_fname, 'wt')
@@ -173,7 +176,7 @@ def main_params(in_fname, out_fname, tetrahedral, double_bond, max_undef, id_fie
 
     try:
         for i, res in enumerate(p.imap_unordered(map_enumerate_stereo,
-                                                 prep_input(in_fname, id_field_name, tetrahedral, double_bond, max_undef),
+                                                 prep_input(in_fname, id_field_name, tetrahedral, double_bond, max_attempts, max_undef),
                                                  chunksize=10)):
             if out_fname is None:
                 for smi, mol_name in res:
@@ -204,6 +207,11 @@ def main():
                         help='generate stereoisomers for unspecified tetrahedral centers.')
     parser.add_argument('-d', '--double_bond', required=False, action='store_true', default=False,
                         help='generate stereoisomers for unspecified double bonds.')
+    parser.add_argument('-a', '--max_attempts', metavar='INTEGER', default=0,
+                        help='maximum number of attempts to embed molecule when testing its 3D structure. '
+                             '0 means maximum possible number of attempts which will help to dentify all possible '
+                             'stereoisomers. Reasonable values for very flexible and complex molecules 100-200 to '
+                             'shorten search time and lost only few stereoisomers. Default: 0.')
     parser.add_argument('-u', '--max_undef', metavar='INTEGER', default=-1,
                         help='maximum allowed number of unspecified stereocenters and/or double bonds. '
                              'if compound contains greater number of them it will be discarded. '
@@ -227,12 +235,21 @@ def main():
         if o == "tetrahedral": tetrahedral = v
         if o == "double_bond": double_bond = v
         if o == "verbose": verbose = v
+        if o == "max_attempts": max_attempts = int(v)
 
     if not tetrahedral and not double_bond:
         print("You should specify at least one option -t or -d. Revise you command line arguments.")
         exit()
 
-    main_params(in_fname, out_fname, tetrahedral, double_bond, max_undef, id_field_name, ncpu, verbose)
+    main_params(in_fname=in_fname,
+                out_fname=out_fname,
+                tetrahedral=tetrahedral,
+                double_bond=double_bond,
+                max_undef=max_undef,
+                id_field_name=id_field_name,
+                max_attempts=max_attempts,
+                ncpu=ncpu,
+                verbose=verbose)
 
 
 if __name__ == '__main__':

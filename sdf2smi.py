@@ -7,7 +7,7 @@ import argparse
 from rdkit import Chem
 
 
-def main(input_fname, output_fname, field_name, extract_fields):
+def main(input_fname, output_fname, field_name, extract_fields, sep):
     with open(output_fname, "wt") as f:
         for m in Chem.SDMolSupplier(input_fname):
             if m:
@@ -20,21 +20,24 @@ def main(input_fname, output_fname, field_name, extract_fields):
                     fields = []
                     for f_name in extract_fields:
                         fields.append(m.GetProp(f_name))
-                    f.write('%s,%s,%s\n' % (smi, n, ','.join(fields)))
+                    f.write(smi + sep + n + sep + sep.join(fields) + '\n')
                 else:
-                    f.write('%s,%s\n' % (smi, n))
+                    f.write(smi + sep + n + '\n')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert SFF to SMILES with mol titles.')
+    parser = argparse.ArgumentParser(description='Convert SDF to canonical isomeric SMILES with mol titles.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
                         help='input SDF file.')
     parser.add_argument('-o', '--output', metavar='output.smi', required=True,
                         help='output SMILES file.')
     parser.add_argument('-f', '--field_name', metavar='FIELD_NAME', default=None,
-                        help='sdf filed name which contains mol names. Optional. If not specified mol titles will be used.')
+                        help='sdf filed name which contains mol names. Optional. '
+                             'If not specified mol titles will be used.')
     parser.add_argument('-e', '--extract_fields', metavar='FIELD_NAMES', default=None, nargs='*',
                         help='sdf fields to extract.')
+    parser.add_argument('-s', '--sep', metavar='SEPARATOR', default='\t',
+                        help='separator in output file. Default: tab.')
 
 
     args = vars(parser.parse_args())
@@ -43,5 +46,6 @@ if __name__ == '__main__':
         if o == "output": output_fname = v
         if o == "field_name": field_name = v
         if o == "extract_fields": extract_fields = v
+        if o == "sep": sep = v
 
-    main(input_fname, output_fname, field_name, extract_fields)
+    main(input_fname, output_fname, field_name, extract_fields, sep)

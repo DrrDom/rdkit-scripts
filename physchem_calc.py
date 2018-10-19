@@ -25,6 +25,10 @@ def calc(smi, name):
         return None
 
 
+def calc_mp(items):
+    return calc(*items)
+
+
 def read_smi(fname, sep="\t"):
     with open(fname) as f:
         for line in f:
@@ -60,7 +64,7 @@ if __name__ == '__main__':
 
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW']) + '\n')
-        for i, res in enumerate(p.starmap(calc, read_smi(in_fname), chunksize=100)):
+        for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             f.write('\t'.join(map(str, res)) + '\n')
             if verbose and i % 100 == 0:
                 sys.stderr.write('\r%i molecules passed' % (i + 1))

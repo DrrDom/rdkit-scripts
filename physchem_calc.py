@@ -6,6 +6,7 @@ import sys
 import argparse
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
 from multiprocessing import Pool, cpu_count
 
 
@@ -19,7 +20,10 @@ def calc(smi, name):
         psa = rdMolDescriptors.CalcTPSA(m)
         logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
         mw = rdMolDescriptors._CalcMolWt(m)
-        return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2)
+        csp3 = rdMolDescriptors.CalcFractionCSP3(m)
+        fmf = GetScaffoldForMol(m).GetNumAtoms(onlyHeavy=True) / m.GetNumAtoms(onlyHeavy=True)
+        return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
+               round(csp3, 3), round(fmf, 3)
     else:
         sys.stderr.write('smiles %s cannot be parsed (%s)' % (smi, name))
         return None

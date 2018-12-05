@@ -39,9 +39,14 @@ def main_params(input_fnames, output_fname, ref_name):
 
     for in_fname in input_fnames:
         mol = Chem.MolFromMol2File(in_fname)
-        mol_rmsd = rmsd(mol, ref)
-        if mol_rmsd is not None:
-            print('%s\t%s' % (in_fname, str(mol_rmsd)))
+        if mol is None:
+            print('%s\t%s' % (in_fname, 'Cannot read structure'))
+        else:
+            mol_rmsd = rmsd(mol, ref)
+            if mol_rmsd is not None:
+                print('%s\t%s' % (in_fname, str(mol_rmsd)))
+            else:
+                print('%s\t%s' % (in_fname, 'No matches'))
 
 
 def main():

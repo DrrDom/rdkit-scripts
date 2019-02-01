@@ -7,8 +7,9 @@ def main(pdb_fname):
     pdb = Chem.MolFromPDBFile(pdb_fname, sanitize=False)
     chains = Chem.SplitMolByPDBChainId(pdb)
     for name, mol in chains.items():
-        with Chem.PDBWriter(os.path.splitext(pdb_fname)[0] + "_chain_%s.pdb" % name) as f:
-            f.write(mol)
+        w = Chem.PDBWriter(os.path.splitext(os.path.abspath(pdb_fname))[0] + "_chain_%s.pdb" % name)
+        w.write(mol)
+        w.close()
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ def calc(smi, name):
         logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
         mw = rdMolDescriptors._CalcMolWt(m)
         csp3 = rdMolDescriptors.CalcFractionCSP3(m)
-        fmf = GetScaffoldForMol(m).GetNumAtoms(onlyHeavy=True) / m.GetNumAtoms(onlyHeavy=True)
+        fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / m.GetNumHeavyAtoms()
         qed = QED.qed(m)
         return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
                round(csp3, 3), round(fmf, 3), round(qed, 3)
@@ -70,7 +70,8 @@ if __name__ == '__main__':
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3', 'fmf', 'qed']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
-            f.write('\t'.join(map(str, res)) + '\n')
+            if res:
+                f.write('\t'.join(map(str, res)) + '\n')
             if verbose and i % 100 == 0:
                 sys.stderr.write('\r%i molecules passed' % (i + 1))
                 sys.stderr.flush()

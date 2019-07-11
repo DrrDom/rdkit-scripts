@@ -18,12 +18,9 @@ from multiprocessing import Pool, cpu_count
 def match(args):
     # args - mol and mol_title
     mol, mol_title = args
-    print(mol, mol_title, patt)
     if mol.HasSubstructMatch(patt):
-        print("OK")
         return Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
     else:
-        print("BAD")
         return None
 
 
@@ -73,7 +70,6 @@ if __name__ == '__main__':
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, res in enumerate(pool.imap(match, read_input(in_fname, id_field_name=field_name)), 1):
-                print(res)
                 if res:
                     smi, mol_title = res
                     f.write('%s\t%s\n' % (smi, mol_title))

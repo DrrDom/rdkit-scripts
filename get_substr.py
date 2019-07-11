@@ -12,6 +12,19 @@ import sys
 import argparse
 from rdkit import Chem
 from read_input import read_input
+from multiprocessing import Pool, cpu_count
+
+
+def match(args):
+    # args - mol and mol_title
+    mol, mol_title = args
+    print(mol, mol_title, patt)
+    if mol.HasSubstructMatch(patt):
+        print("OK")
+        return Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
+    else:
+        print("BAD")
+        return None
 
 
 if __name__ == '__main__':
@@ -24,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--substr', metavar='SMARTS_STRING', required=True,
                         help='SMARTS string used for substructure matching.')
     parser.add_argument('-f', '--field_name', metavar='SDF_FIELD_NAME', default=None,
-                        help='if sdf weas passed as input the field name with molecule title can be optionally '
+                        help='if sdf was passed as input the field name with molecule title can be optionally '
                              'specified.')
     parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1,
                         help='Number of CPU cores to use. Default: 1.')
@@ -42,13 +55,31 @@ if __name__ == '__main__':
 
     patt = Chem.MolFromSmarts(pattern)
 
-    with open(out_fname, 'wt') as f:
-        match_counter = 0
-        for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
-            if mol.HasSubstructMatch(patt):
-                f.write('%s\t%s\n' % (Chem.MolToSmiles(mol, isomericSmiles=True), mol_title))
-                f.flush()
-                match_counter += 1
-            if verbose and (i + 1) % 100 == 0:
-                sys.stderr.write('\r%i molecules passed; matches: %i' % (i + 1, match_counter))
-                sys.stderr.flush()
+    if ncpu == 1:
+
+        with open(out_fname, 'wt') as f:
+            match_counter = 0
+            for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
+                if mol.HasSubstructMatch(patt):
+                    f.write('%s\t%s\n' % (Chem.MolToSmiles(mol, isomericSmiles=True), mol_title))
+                    f.flush()
+                    match_counter += 1
+                if verbose and (i + 1) % 100 == 0:
+                    sys.stderr.write('\r%i molecules passed; matches: %i' % (i + 1, match_counter))
+                    sys.stderr.flush()
+
+    else:
+        pool = Pool(max(1, min(ncpu, cpu_count())))
+        with open(out_fname, 'wt') as f:
+            match_counter = 0
+            for i, res in enumerate(pool.imap(match, read_input(in_fname, id_field_name=field_name)), 1):
+                print(res)
+                if res:
+                    smi, mol_title = res
+                    f.write('%s\t%s\n' % (smi, mol_title))
+                    f.flush()
+                    match_counter += 1
+                if verbose and i % 100 == 0:
+                    sys.stderr.write('\r%i molecules passed; matches: %i' % (i, match_counter))
+                    sys.stderr.flush()
+

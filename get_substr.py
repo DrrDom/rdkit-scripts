@@ -19,9 +19,9 @@ def match(args):
     # args - mol and mol_title
     mol, mol_title = args
     if mol.HasSubstructMatch(patt):
-        return Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
+        return True, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
     else:
-        return None
+        return False, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
 
 
 if __name__ == '__main__':
@@ -38,6 +38,8 @@ if __name__ == '__main__':
                              'specified.')
     parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1,
                         help='Number of CPU cores to use. Default: 1.')
+    parser.add_argument('-n', '--negate', action='store_true', default=False,
+                        help='return SMILES which DO NOT match the pattern.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='print progress to STDERR.')
 
@@ -49,6 +51,7 @@ if __name__ == '__main__':
         if o == "field_name": field_name = v
         if o == "ncpu": ncpu = int(v)
         if o == "verbose": verbose = v
+        if o == "negate": neg = v
 
     patt = Chem.MolFromSmarts(pattern)
 
@@ -57,7 +60,7 @@ if __name__ == '__main__':
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
-                if mol.HasSubstructMatch(patt):
+                if mol.HasSubstructMatch(patt) != neg:
                     f.write('%s\t%s\n' % (Chem.MolToSmiles(mol, isomericSmiles=True), mol_title))
                     f.flush()
                     match_counter += 1
@@ -70,8 +73,8 @@ if __name__ == '__main__':
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, res in enumerate(pool.imap(match, read_input(in_fname, id_field_name=field_name)), 1):
-                if res:
-                    smi, mol_title = res
+                if (res[0] and not neg) or (not res[0] and neg):
+                    _, smi, mol_title = res
                     f.write('%s\t%s\n' % (smi, mol_title))
                     f.flush()
                     match_counter += 1

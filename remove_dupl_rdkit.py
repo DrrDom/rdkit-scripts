@@ -4,6 +4,15 @@ __author__ = 'Pavel Polishchuk'
 
 import argparse
 from rdkit import Chem
+from rdkit.Chem import inchi
+
+
+def get_inchi_key(mol, stereo):
+    inchi_key = inchi.MolToInchiKey(mol)
+    if not stereo:
+        q = inchi_key.split('-')
+        inchi_key = q[0] + '-' + q[2]  # remove middle part responsible for stereo and isotopes
+    return inchi_key
 
 
 def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo):
@@ -19,21 +28,21 @@ def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo):
                 mol_name = mol.GetProp("_Name")
                 if not mol_name:
                     mol_name = 'autoname_id_' + str(i)
-                cansmi = Chem.MolToSmiles(mol, isomericSmiles=stereo)
-                if cansmi not in d.keys():
-                    d[cansmi] = [mol_name]
+                inchi_key = get_inchi_key(mol, stereo)
+                if inchi_key not in d.keys():
+                    d[inchi_key] = [mol_name]
 
     for i, mol in enumerate(Chem.SDMolSupplier(in_fname)):
         if mol is not None:
             mol_name = mol.GetProp("_Name")
             if not mol_name:
                 mol_name = 'autoname_id_' + str(i)
-            cansmi = Chem.MolToSmiles(mol, isomericSmiles=stereo)
-            if cansmi not in d.keys():
+            inchi_key = get_inchi_key(mol, stereo)
+            if inchi_key not in d.keys():
                 saver.write(mol)
-                d[cansmi] = [mol_name]
+                d[inchi_key] = [mol_name]
             else:
-                d[cansmi].append(mol_name)
+                d[inchi_key].append(mol_name)
 
     if dupl_fname is not None:
         with open(dupl_fname, 'wt') as f:
@@ -44,7 +53,7 @@ def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo):
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Remove duplicates by inchi comparison.')
+    parser = argparse.ArgumentParser(description='Remove duplicates by inchi keys comparison.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
                         help='input sdf file.')
     parser.add_argument('-r', '--reference', metavar='reference.sdf', required=False, default=None,
@@ -56,7 +65,8 @@ def main():
     parser.add_argument('-o', '--output', metavar='output.sdf', required=True,
                         help='output sdf file with removed duplicates.')
     parser.add_argument('-s', '--stereo', action='store_true', default=False,
-                        help='if set this flag stereoconfiguration will be considered during duplicate searching.')
+                        help='if set this flag stereoconfiguration will be considered during duplicate searching. '
+                             'If set then isotopes will be considered as well.')
 
     args = vars(parser.parse_args())
     for o, v in args.items():

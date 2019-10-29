@@ -16,7 +16,7 @@ def get_inchi_key(mol, stereo):
     return inchi_key
 
 
-def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo):
+def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo, ref_only):
 
     saver = Chem.SDWriter(out_fname)
 
@@ -35,7 +35,8 @@ def main_params(in_fname, dupl_fname, out_fname, ref_fname, stereo):
             inchi_key = get_inchi_key(mol, stereo)
             if inchi_key not in d.keys():
                 saver.write(mol)
-                d[inchi_key] = [mol_name]
+                if not ref_only:
+                    d[inchi_key] = [mol_name]
             else:
                 d[inchi_key].append(mol_name)
 
@@ -55,7 +56,11 @@ def main():
                         help='reference sdf file. If this file is specified than compounds from the input file '
                              'will be omitted if they are present in the reference file. If the input file contains '
                              'duplicated structures which are not in the reference file they will be also filtered. '
+                             'To change this behavior set --reference_only argument. '
                              'Supported file formats are SDF, SMI, SDF.GZ or PKL.')
+    parser.add_argument('-t', '--reference_only', action='store_true', default=False,
+                        help='if set this flag only molecules duplicated with reference file will be omitted but not '
+                             'duplicates with in input file.')
     parser.add_argument('-d', '--duplicates', metavar='duplicates.txt', required=False, default=None,
                         help='if specified names of removed duplicates will be stored in this file.')
     parser.add_argument('-o', '--output', metavar='output.sdf', required=True,
@@ -71,8 +76,9 @@ def main():
         if o == "reference": ref_fname = v
         if o == "duplicates": dupl_fname = v
         if o == "stereo": stereo = v
+        if o == "reference_only": ref_only = v
 
-    main_params(input_fnames, dupl_fname, output_fname, ref_fname, stereo)
+    main_params(input_fnames, dupl_fname, output_fname, ref_fname, stereo, ref_only)
 
 
 if __name__ == '__main__':

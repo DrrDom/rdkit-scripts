@@ -47,6 +47,7 @@ def __read_smiles(fname, sanitize=True):
                     mol_title = tmp[1]
                 else:
                     mol_title = Chem.MolToSmiles(mol, isomericSmiles=True)
+                mol.SetProp('_Name', mol_title)
                 yield mol, mol_title
 
 

@@ -12,11 +12,14 @@ def read_pdbqt(fname, sanitize, removeHs):
     mols = []
     with open(fname) as f:
         pdb_block = f.read().split('MODEL ')
-        for block in pdb_block[1:]:
+        for i, block in enumerate(pdb_block[1:]):
             m = Chem.MolFromPDBBlock('\n'.join([i[:66] for i in block.split('\n')]),
                                      sanitize=sanitize,
                                      removeHs=removeHs)
-            mols.append(m)
+            if m is None:
+                sys.stderr.write(f'The pose #{i+1} cannot be read from {fname}\n')
+            else:
+                mols.append(m)
     return mols
 
 
@@ -84,6 +87,10 @@ def main_params(input_fnames, output_fname):
                 center = calc_center(get_coord(m))
                 if center is not None:
                     print(fname + '\t' + '\t'.join(map(str, center)))
+
+        else:
+
+            sys.stderr.write(f'Molecule cannot be read from {fname}\n')
 
 
 def main():

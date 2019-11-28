@@ -8,6 +8,18 @@ import argparse
 import sys
 
 
+def read_pdbqt(fname, sanitize, removeHs):
+    mols = []
+    with open(fname) as f:
+        pdb_block = f.read().split('MODEL ')
+        for block in pdb_block[1:]:
+            m = Chem.MolFromPDBBlock('\n'.join([i[:66] for i in block.split('\n')]),
+                                     sanitize=sanitize,
+                                     removeHs=removeHs)
+            mols.append(m)
+    return mols
+
+
 def get_coord(mol, indices=None):
     if indices is None:
         indices = tuple(range(mol.GetNumAtoms()))
@@ -52,6 +64,8 @@ def main_params(input_fnames, output_fname):
             f = Chem.MolFromPDBFile
         elif fname[-5:].lower() == '.mol2':
             f = Chem.MolFromMol2File
+        elif fname[-6:].lower() == '.pdbqt':
+            f = read_pdbqt
         else:
             continue
 
@@ -59,18 +73,24 @@ def main_params(input_fnames, output_fname):
 
         if m is not None:
 
-            coord = get_coord(m)
-            center = calc_center(coord)
+            if isinstance(m, list):  # pdbqt
+                for item in m:
+                    center = calc_center(get_coord(item))
+                    if center is not None:
+                        print(fname + '\t' + '\t'.join(map(str, center)))
 
-            if center is not None:
-                print(fname + '\t' + '\t'.join(map(str, center)))
+            else:  # pdb/mol2
+
+                center = calc_center(get_coord(m))
+                if center is not None:
+                    print(fname + '\t' + '\t'.join(map(str, center)))
 
 
 def main():
 
     parser = argparse.ArgumentParser(description='Calc center of all supplied coordinates in a file.')
     parser.add_argument('-i', '--input', metavar='input_molecule', required=True, nargs='*',
-                        help='input files (PDB/MOL2).')
+                        help='input files (PDB/PDBQT/MOL2).')
     parser.add_argument('-o', '--output', metavar='output.txt',
                         help='output text file. If omitted output will be in stdout.')
 

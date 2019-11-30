@@ -12,12 +12,12 @@ def read_pdbqt(fname, sanitize, removeHs):
     mols = []
     with open(fname) as f:
         pdb_block = f.read().split('MODEL ')
-        for i, block in enumerate(pdb_block[1:]):
+        for j, block in enumerate(pdb_block[1:]):
             m = Chem.MolFromPDBBlock('\n'.join([i[:66] for i in block.split('\n')]),
                                      sanitize=sanitize,
                                      removeHs=removeHs)
             if m is None:
-                sys.stderr.write(f'The pose #{i+1} cannot be read from {fname}\n')
+                sys.stderr.write(f'The pose #{j+1} cannot be read from {fname}\n')
             else:
                 mols.append(m)
     return mols

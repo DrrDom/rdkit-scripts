@@ -4,6 +4,7 @@ __author__ = 'Pavel Polishchuk'
 
 import sys
 import argparse
+from argparse import RawTextHelpFormatter
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors, QED
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
@@ -47,7 +48,21 @@ def read_smi(fname, sep="\t"):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Calculate some physicochemical parameters with RDKit.')
+    parser = argparse.ArgumentParser(description='Calculate some physicochemical parameters with RDKit.\n'
+                                                 'HBA: number of H-bond acceptors\n'
+                                                 'HBD: number of H-bond donors\n'
+                                                 'complexity: HBA + HBD\n'
+                                                 'NumRings: number of rings\n'
+                                                 'RTB: number of rotatable bonds\n'
+                                                 'TPSA: topological polar surface area\n'
+                                                 'logP: lipophilicity\n'
+                                                 'MR: molecular refraction\n'
+                                                 'MW: molecular weight\n'
+                                                 'Csp3: fraction of sp3 carbons\n'
+                                                 'fmf: fraction of atoms belonging to Murcko framework\n'
+                                                 'QED: quantitative estimate of drug-likeness\n'
+                                                 'HAC: heavy atom count',
+                                     formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'
                              'Fields are tab-separated. No header.')
@@ -69,7 +84,7 @@ if __name__ == '__main__':
     p = Pool(min(ncpu, cpu_count()))
 
     with open(out_fname, 'wt') as f:
-        f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3', 'fmf', 'QED', 'HAC') + '\n')
+        f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3', 'fmf', 'QED', 'HAC']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

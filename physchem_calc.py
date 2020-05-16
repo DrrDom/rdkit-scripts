@@ -22,8 +22,11 @@ def calc(smi, name):
         logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
         mw = rdMolDescriptors._CalcMolWt(m)
         csp3 = rdMolDescriptors.CalcFractionCSP3(m)
-        fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / m.GetNumHeavyAtoms()
         hac = m.GetNumHeavyAtoms()
+        if hac == 0:
+            fmf = 0
+        else:
+            fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
         qed = QED.qed(m)
         return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
                round(csp3, 3), round(fmf, 3), round(qed, 3), hac

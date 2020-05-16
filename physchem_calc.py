@@ -14,22 +14,26 @@ from multiprocessing import Pool, cpu_count
 def calc(smi, name):
     m = Chem.MolFromSmiles(smi)
     if m is not None:
-        hba = rdMolDescriptors.CalcNumHBA(m)
-        hbd = rdMolDescriptors.CalcNumHBD(m)
-        nrings = rdMolDescriptors.CalcNumRings(m)
-        rtb = rdMolDescriptors.CalcNumRotatableBonds(m)
-        psa = rdMolDescriptors.CalcTPSA(m)
-        logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
-        mw = rdMolDescriptors._CalcMolWt(m)
-        csp3 = rdMolDescriptors.CalcFractionCSP3(m)
-        hac = m.GetNumHeavyAtoms()
-        if hac == 0:
-            fmf = 0
-        else:
-            fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
-        qed = QED.qed(m)
-        return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
-               round(csp3, 3), round(fmf, 3), round(qed, 3), hac
+        try:
+            hba = rdMolDescriptors.CalcNumHBA(m)
+            hbd = rdMolDescriptors.CalcNumHBD(m)
+            nrings = rdMolDescriptors.CalcNumRings(m)
+            rtb = rdMolDescriptors.CalcNumRotatableBonds(m)
+            psa = rdMolDescriptors.CalcTPSA(m)
+            logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
+            mw = rdMolDescriptors._CalcMolWt(m)
+            csp3 = rdMolDescriptors.CalcFractionCSP3(m)
+            hac = m.GetNumHeavyAtoms()
+            if hac == 0:
+                fmf = 0
+            else:
+                fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
+            qed = QED.qed(m)
+            return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
+                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac
+        except:
+            sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
+            return None
     else:
         sys.stderr.write('smiles %s cannot be parsed (%s)' % (smi, name))
         return None

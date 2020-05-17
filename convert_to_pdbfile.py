@@ -25,9 +25,11 @@ def map_write_pdb(args):
 
 
 def write_pdb_file(mol, mol_name, output_path):
-    mol = Chem.AddHs(mol)
-    if '2D' in Chem.MolToMolBlock(mol):
+    if mol.GetNumConformers() == 0 or not mol.GetConformer(0).Is3D():
+        mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol)
+    else:
+        mol = Chem.AddHs(mol, addCoords=True)
     mol.SetProp('_Name', mol_name)
     Chem.MolToPDBFile(mol, os.path.join(output_path, mol_name + '.pdb'), flavor=4)
 

@@ -8,7 +8,7 @@ from rdkit import Chem
 from read_input import read_input
 
 
-# list excludes transition metals (they can form complices) and Mg, Ca,... - they can form complices
+# list excludes transition metals (they can form complexes) and Mg, Ca,... - they can form complexes
 good_elm = {'H', 'C', 'O', 'N', 'P', 'Cl', 'F', 'Br', 'I', 'S',
                'B', 'Si', "Cs", "Li",
                "Na", "K", "Rb",  "Al", "Ga", "In","Ti", "Nh",
@@ -59,13 +59,13 @@ def main_params(in_fname, good_fname, bad_fname):
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Removes Multi-component compounds and compounds with '
+    parser = argparse.ArgumentParser(description='Removes multi-component compounds and compounds with '
                                                  'non-organic atoms.')
-    parser.add_argument('-i', '--input', metavar='input.sdf', required=False, default=None,
+    parser.add_argument('-i', '--input', metavar='FILENAME', required=False, default=None,
                         help='input file in SDF or SMILES format. SMILES input should have no header, '
                              'the first column is SMILES string and the second column with ID is optional. '
                              'If omitted STDIN will be read as SDF format.')
-    parser.add_argument('-o', '--output', metavar='output.sdf', required=True,
+    parser.add_argument('-o', '--output', metavar='FILENAME', required=True,
                         help='output file in SDF format.')
     parser.add_argument('-d', '--discarded', metavar='output.smi', required=False, default=None,
                         help='output file for discarded compounds in SDF or SMILES format. '

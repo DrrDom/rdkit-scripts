@@ -27,9 +27,9 @@ def match(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Select compounds matching the specified substructure.')
-    parser.add_argument('-i', '--in', metavar='input.smi', required=True,
+    parser.add_argument('-i', '--in', metavar='FILENAME', required=True,
                         help='input SMILES/SDF file. SMILES file should contain no header.')
-    parser.add_argument('-o', '--out', metavar='output.smi', required=True,
+    parser.add_argument('-o', '--out', metavar='FILENAME', required=True,
                         help='output file with SMILES and compound names.')
     parser.add_argument('-s', '--substr', metavar='SMARTS_STRING', required=True,
                         help='SMARTS string used for substructure matching.')

@@ -6,6 +6,7 @@ __author__ = 'Pavel Polishchuk'
 from rdkit import Chem
 import argparse
 import sys
+from read_input import read_pdbqt
 
 
 def get_coord(mol, indices=None):
@@ -19,53 +20,73 @@ def get_coord(mol, indices=None):
 
 
 def rmsd(mol, ref):
-    match_indeces = mol.GetSubstructMatches(ref, uniquify=False)
-    if not match_indeces:
+    match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=True)
+    if not match_indices:
         return None
     else:
         ref_coord = get_coord(ref)
-        mol_coord = get_coord(mol, match_indeces[0])
-        s = 0
-        for r, m in zip(ref_coord, mol_coord):
-            s += ((r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2) ** 0.5
-        return round(s / len(ref_coord), 3)
+        min_rmsd = float('inf')
+        for ids in match_indices:
+            mol_coord = get_coord(mol, ids)
+            s = 0
+            for r, m in zip(ref_coord, mol_coord):
+                s += ((r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2) ** 0.5
+            s = s / len(ref_coord)
+            if s < min_rmsd:
+                min_rmsd = s
+        return round(min_rmsd, 3)
 
 
-def main_params(input_fnames, output_fname, ref_name):
-    ref = Chem.MolFromMol2File(ref_name)
+def main_params(input_fnames, output_fname, ref_name, smi):
+
+    if ref_name.endswith('.mol2'):
+        ref = Chem.MolFromMol2File(ref_name)
+    elif ref_name.endswith('.pdbqt'):
+        ref = read_pdbqt(ref_name, smi)[0]
+    else:
+        sys.stderr.write('Wrong format of the reference file. Only MOL2 and PDBQT files are allowed.')
+        raise ValueError
 
     if output_fname is not None:
         sys.stdout = open(output_fname, 'wt')
 
     for in_fname in input_fnames:
-        mol = Chem.MolFromMol2File(in_fname)
-        if mol is None:
-            print('%s\t%s' % (in_fname, 'Cannot read structure'))
+
+        if in_fname.endswith('.mol2'):
+            mols = [Chem.MolFromMol2File(in_fname)]
+        elif in_fname.endswith('.pdbqt') or in_fname.endswith('.pdbqt_out'):
+            mols = read_pdbqt(in_fname, smi)
         else:
-            mol_rmsd = rmsd(mol, ref)
-            if mol_rmsd is not None:
-                print('%s\t%s' % (in_fname, str(mol_rmsd)))
+            sys.stderr.write(f'Wrong format of the input file - {in_fname}. Only MOL2 and PDBQT files are allowed.')
+            raise ValueError
+
+        for i, mol in enumerate(mols, 1):
+            if mol is None:
+                print(f'{in_fname}\t{i}\tCannot read structure')
             else:
-                print('%s\t%s' % (in_fname, 'No matches'))
+                mol_rmsd = rmsd(mol, ref)
+                if mol_rmsd is not None:
+                    print(f'{in_fname}\t{i}\t{mol_rmsd}')
+                else:
+                    print(f'{in_fname}\t{i}\tNo matches')
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Calc RMSD between ref molecules and docked poses.')
-    parser.add_argument('-i', '--input', metavar='input.mol2', required=True, nargs='*',
-                        help='input mol2 files to compare with a reference molecule.')
-    parser.add_argument('-r', '--reference', metavar='ref.mol2', required=True,
-                        help='reference molecule (from X-ray complex structure).')
-    parser.add_argument('-o', '--output', metavar='output.txt',
+    parser = argparse.ArgumentParser(description='Calc RMSD between a reference molecule and docked poses.')
+    parser.add_argument('-i', '--input', metavar='FILENAME', required=True, nargs='*',
+                        help='input MOL2/PDBQT files to compare with a reference molecule.')
+    parser.add_argument('-r', '--reference', metavar='FILENAME', required=True,
+                        help='reference molecule (from X-ray complex structure) in MOL2/PDBQT format.')
+    parser.add_argument('-s', '--smi', metavar='SMILES', required=False, default=None,
+                        help='SMILES of the reference molecule. It requires only for PDBQT input to assign bond '
+                             'orders.')
+    parser.add_argument('-o', '--output', metavar='FILENAME',
                         help='output text file. If omitted output will be in stdout.')
 
-    args = vars(parser.parse_args())
-    for o, v in args.items():
-        if o == "input": input_fnames = v
-        if o == "output": output_fname = v
-        if o == "reference": ref_name = v
+    args = parser.parse_args()
 
-    main_params(input_fnames, output_fname, ref_name)
+    main_params(args.input, args.output, args.reference, args.smi)
 
 
 if __name__ == '__main__':

@@ -5,8 +5,50 @@ import sys
 import gzip
 import pickle
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem.PropertyMol import PropertyMol
 from io import BytesIO
+
+
+def read_pdbqt(fname, smi, sanitize=True, removeHs=False):
+    """
+    Read all MODEL entries in input PDBQT file as separate identical molecules. If no MODEL sections then whole file is
+    recognized as a single structure (list with a single molecule will be returned)
+
+    :param fname: pdbqt file
+    :param smi: SMILES of the molecule in pdbqt file to assing bond orders
+    :param sanitize:
+    :param removeHs:
+    :return: list of molecules
+    """
+
+    def read_pdbqt_block(pdbqt_block):
+        return Chem.MolFromPDBBlock('\n'.join([i[:66] for i in pdbqt_block.split('\n')]),
+                                    sanitize=sanitize,
+                                    removeHs=removeHs)
+
+    mols = []
+    refmol = Chem.MolFromSmiles(smi)
+    with open(fname) as f:
+        s = f.read()
+        if 'MODEL' in s:
+            pdbqt_blocks = s.split('MODEL ')
+            for j, block in enumerate(pdbqt_blocks[1:]):
+                m = read_pdbqt_block(block)
+                if m is None:
+                    sys.stderr.write(f'The pose #{j+1} cannot be read from {fname}\n')
+                else:
+                    m = AllChem.AssignBondOrdersFromTemplate(refmol, m)
+                    mols.append(m)
+        else:
+            m = read_pdbqt_block(s)
+            if m is None:
+                sys.stderr.write(f'Structure from {fname} cannot be read\n')
+            else:
+                m = AllChem.AssignBondOrdersFromTemplate(refmol, m)
+                mols.append(m)
+
+    return mols
 
 
 def __read_pkl(fname):

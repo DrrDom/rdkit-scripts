@@ -125,7 +125,7 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
                     for item in  mol.GetProp('energy').split(';'):
                         conf_id, v = item.split(' ')
                         e[int(conf_id)] = v
-                    string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) + f'>  <energy>\n{e[conf_id]}\n' for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
+                    string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) + f'>  <energy>\n{e[conf_id]}\n\n' for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
                     if string:   # wrong molecules (no valid conformers) will result in empty string
                         string += "$$$$\n"
                         if out_fname is None:

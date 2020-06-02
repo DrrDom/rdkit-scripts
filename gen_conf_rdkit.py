@@ -41,18 +41,18 @@ def remove_confs(mol, energy, rms):
     if not e:
         return
 
-    kept_ids = [e[0][0]]
+    keep_ids = [e[0][0]]
     remove_ids = []
 
     if energy is not None:
         for item in e[1:]:
             if item[1] - e[0][1] <= energy:
-                kept_ids.append(item[0])
+                keep_ids.append(item[0])
             else:
                 remove_ids.append(item[0])
 
     if rms is not None:
-        rms_list = [(i1, i2, AllChem.GetConformerRMS(mol, i1, i2)) for i1, i2 in combinations(kept_ids, 2)]
+        rms_list = [(i1, i2, AllChem.GetConformerRMS(mol, i1, i2)) for i1, i2 in combinations(keep_ids, 2)]
         while any(item[2] < rms for item in rms_list):
             for item in rms_list:
                 if item[2] < rms:
@@ -63,6 +63,14 @@ def remove_confs(mol, energy, rms):
 
     for cid in set(remove_ids):
         mol.RemoveConformer(cid)
+
+    # reorder conformers by energy
+    keep_ids = [i for i, en in e if i not in set(remove_ids)]  # ids is ordered because e is ordered
+    for c in mol.GetConformers():
+        c.SetId(c.GetId() + 100000)
+    for c in mol.GetConformers():
+        i = keep_ids.index(c.GetId() - 100000) + 1
+        c.SetId(i)
 
 
 def gen_confs(mol, mol_name, nconf, energy, rms, seed):
@@ -104,7 +112,7 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
                 pickle.dump((mol, mol_name), writer, -1)
             else:
                 mol.SetProp("_Name", mol_name)
-                string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=c.GetId()) for c in mol.GetConformers())
+                string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
                 if string:   # wrong molecules (no valid conformers) will result in empty string
                     string += "$$$$\n"
                     if out_fname is None:
@@ -124,7 +132,10 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate specified number of conformers using RDKit.')
+    parser = argparse.ArgumentParser(description='Generate specified number of conformers using RDKit. '
+                                                 'Conformers ids will be assigned according to conformer energy, '
+                                                 'but the actual order of conformers on RDKit Mol object will not '
+                                                 'be changed.')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=False, default=None,
                         help='input file with structures to generate conformers. Allowed formats SDF or SMILES. '
                              'if omitted STDIN will be used. STDIN takes only SMILES input (one or two columns).')

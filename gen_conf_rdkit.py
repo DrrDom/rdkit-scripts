@@ -74,6 +74,10 @@ def remove_confs(mol, energy, rms):
         i = keep_ids.index(c.GetId() - 100000) + 1
         c.SetId(i)
 
+    # save conf energy to mol
+    en = [en for i, en in e if i not in set(remove_ids)]
+    mol.SetProp('energy', ';'.join(f'{i} {v:.2f}' for i, v in enumerate(en, 1)))
+
 
 def gen_confs(mol, mol_name, nconf, energy, rms, seed):
     mol = Chem.AddHs(mol)
@@ -86,6 +90,8 @@ def gen_confs(mol, mol_name, nconf, energy, rms, seed):
 
 
 def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, seed, verbose):
+
+    Chem.SetDefaultPickleProperties(Chem.PropertyPickleOptions.AllProps)
 
     output_file_type = None
     if out_fname is not None:
@@ -110,18 +116,23 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
 
     try:
         for i, (mol_name, mol) in enumerate(p.imap_unordered(map_gen_conf, prep_input(in_fname, id_field_name, nconf, energy, rms, seed), chunksize=10), 1):
-            if output_file_type == 'pkl':
-                pickle.dump((mol, mol_name), writer, -1)
-            else:
-                mol.SetProp("_Name", mol_name)
-                string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
-                if string:   # wrong molecules (no valid conformers) will result in empty string
-                    string += "$$$$\n"
-                    if out_fname is None:
-                        sys.stdout.write(string)
-                        sys.stdout.flush()
-                    else:
-                        writer.write(string.encode("ascii") if output_file_type == 'sdf.gz' else string)
+            if mol:
+                if output_file_type == 'pkl':
+                    pickle.dump((mol, mol_name), writer, -1)
+                else:
+                    mol.SetProp("_Name", mol_name)
+                    e = dict()
+                    for item in  mol.GetProp('energy').split(';'):
+                        conf_id, v = item.split(' ')
+                        e[int(conf_id)] = v
+                    string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) + f'>  <energy>\n{e[conf_id]}\n' for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
+                    if string:   # wrong molecules (no valid conformers) will result in empty string
+                        string += "$$$$\n"
+                        if out_fname is None:
+                            sys.stdout.write(string)
+                            sys.stdout.flush()
+                        else:
+                            writer.write(string.encode("ascii") if output_file_type == 'sdf.gz' else string)
             if verbose and i % 10 == 0:
                 sys.stderr.write('\r%i molecules passed' % (i, ))
                 sys.stderr.flush()
@@ -137,7 +148,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate specified number of conformers using RDKit. '
                                                  'Conformers ids will be assigned according to conformer energy, '
                                                  'but the actual order of conformers on RDKit Mol object will not '
-                                                 'be changed.')
+                                                 'be changed. Property _energy will be added to the Mol objects.')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=False, default=None,
                         help='input file with structures to generate conformers. Allowed formats SDF or SMILES. '
                              'if omitted STDIN will be used. STDIN takes only SMILES input (one or two columns).')

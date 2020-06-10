@@ -4,6 +4,8 @@ import os
 import sys
 import gzip
 import pickle
+import random
+import string
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.PropertyMol import PropertyMol
@@ -51,6 +53,15 @@ def read_pdbqt(fname, smi, sanitize=True, removeHs=False):
     return mols
 
 
+def __get_smi_as_molname(mol):
+    try:
+        name = Chem.MolToSmiles(mol, isomericSmiles=True)
+    except Exception as e:
+        name = random.sample(string.ascii_uppercase, 10)
+        sys.stderr.write(f'Some molecule cannot be converted to SMILES - {name} was inserted as the molecule title')
+    return name
+
+
 def __read_pkl(fname):
     with open(fname, 'rb') as f:
         while True:
@@ -75,7 +86,7 @@ def __read_sdf(fname, input_format, id_field_name=None, sanitize=True):
                 if mol.GetProp("_Name"):
                     mol_title = mol.GetProp("_Name")
                 else:
-                    mol_title = Chem.MolToSmiles(mol, isomericSmiles=True)
+                    mol_title = __get_smi_as_molname(mol)
             yield PropertyMol(mol), mol_title
 
 
@@ -88,7 +99,7 @@ def __read_smiles(fname, sanitize=True):
                 if len(tmp) > 1:
                     mol_title = tmp[1]
                 else:
-                    mol_title = Chem.MolToSmiles(mol, isomericSmiles=True)
+                    mol_title = __get_smi_as_molname(mol)
                 mol.SetProp('_Name', mol_title)
                 yield mol, mol_title
 
@@ -102,7 +113,7 @@ def __read_stdin_smiles(sanitize=True):
                 if len(tmp) > 1:
                     mol_title = tmp[1]
                 else:
-                    mol_title = Chem.MolToSmiles(mol, isomericSmiles=True)
+                    mol_title = __get_smi_as_molname(mol)
                 yield mol, mol_title
         line = sys.stdin.readline()
 
@@ -116,7 +127,7 @@ def __read_stdin_sdf(sanitize=True):
             mol = [x for x in Chem.ForwardSDMolSupplier(BytesIO(molblock.encode('utf-8')), sanitize=sanitize)][0]
             mol_title = molblock.split('\n', 1)[0]
             if not mol_title:
-                mol_title = Chem.MolToSmiles(mol, isomericSmiles=True)
+                mol_title = __get_smi_as_molname(mol)
             yield mol, mol_title
             molblock = ''
         line = sys.stdin.readline()

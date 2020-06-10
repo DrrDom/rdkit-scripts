@@ -57,7 +57,7 @@ def __get_smi_as_molname(mol):
     try:
         name = Chem.MolToSmiles(mol, isomericSmiles=True)
     except Exception as e:
-        name = random.sample(string.ascii_uppercase, 10)
+        name = ''.join(random.sample(string.ascii_uppercase, 10))
         sys.stderr.write(f'Some molecule cannot be converted to SMILES - {name} was inserted as the molecule title')
     return name
 

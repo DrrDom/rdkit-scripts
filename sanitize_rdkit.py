@@ -99,8 +99,9 @@ def main(in_fname, out_fname, error_fname, input_format, output_format):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Removes Multi-component compounds and compounds with '
-                                                 'non-organic atoms.')
+    parser = argparse.ArgumentParser(description='Removes compounds with rdkit sanitization errors and add to output '
+                                                 'molecules number of double bonds, unspecified stereocenters and '
+                                                 'total charge.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=False, default=None,
                         help='input file in SDF or SMILES format. SMILES input should have no header, '
                              'the first column is SMILES string and the second column with ID is optional. '

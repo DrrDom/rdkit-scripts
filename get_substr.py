@@ -18,7 +18,8 @@ from multiprocessing import Pool, cpu_count
 def match(args):
     # args - mol and mol_title
     mol, mol_title = args
-    if mol.HasSubstructMatch(patt):
+    res = [mol.HasSubstructMatch(pat) for pat in patt]
+    if (not neg and any(res)) or (neg and not any(res)):
         return True, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
     else:
         return False, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
@@ -31,8 +32,10 @@ if __name__ == '__main__':
                         help='input SMILES/SDF file. SMILES file should contain no header.')
     parser.add_argument('-o', '--out', metavar='FILENAME', required=True,
                         help='output file with SMILES and compound names.')
-    parser.add_argument('-s', '--substr', metavar='SMARTS_STRING', required=True,
-                        help='SMARTS string used for substructure matching.')
+    parser.add_argument('-s', '--substr', metavar='SMARTS_STRING', required=True, nargs='+',
+                        help='SMARTS string used for substructure matching. If multiple patterns were '
+                             'supplied at least one of them should be matched or, if negate argument '
+                             'used, all of them should not matched.')
     parser.add_argument('-f', '--field_name', metavar='SDF_FIELD_NAME', default=None,
                         help='if sdf was passed as input the field name with molecule title can be optionally '
                              'specified.')
@@ -53,15 +56,16 @@ if __name__ == '__main__':
         if o == "verbose": verbose = v
         if o == "negate": neg = v
 
-    patt = Chem.MolFromSmarts(pattern)
+    patt = [Chem.MolFromSmarts(p) for p in pattern]
 
     if ncpu == 1:
 
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
-                if mol.HasSubstructMatch(patt) != neg:
-                    f.write('%s\t%s\n' % (Chem.MolToSmiles(mol, isomericSmiles=True), mol_title))
+                res = match((mol, mol_title))
+                if res[0]:
+                    f.write('%s\t%s\n' % res[1:])
                     f.flush()
                     match_counter += 1
                 if verbose and (i + 1) % 100 == 0:
@@ -73,9 +77,8 @@ if __name__ == '__main__':
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, res in enumerate(pool.imap(match, read_input(in_fname, id_field_name=field_name)), 1):
-                if (res[0] and not neg) or (not res[0] and neg):
-                    _, smi, mol_title = res
-                    f.write('%s\t%s\n' % (smi, mol_title))
+                if res[0]:
+                    f.write('%s\t%s\n' % res[1:])
                     f.flush()
                     match_counter += 1
                 if verbose and i % 100 == 0:

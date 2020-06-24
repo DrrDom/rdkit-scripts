@@ -9,6 +9,33 @@ from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors, QED
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
 from multiprocessing import Pool, cpu_count
+from itertools import combinations
+
+
+def fused_ring_count(m):
+    # count rings considering fused and spiro cycles as a single ring system
+    # print(rings('C1CC23CCC2CC13'))  # 1
+    # print(rings('O=C(N1CCNCC1)c1ccc(=O)oc1'))  # 2
+    # print(rings('O=C(C1CCC(=O)C23CCCC2CCC13)N1CCNC2CCCC12'))  # 2
+    # print(rings('O=C(C1CCC(=O)C23CCCC2CCC13)N1CCNC2C1CCC21CCCC1'))  # 2
+    # print(rings('C1CC2(C1)CC1(C2)C2CCC22CCC12'))  # 1
+    # print(rings('CC12CCC(C1)C1CCC21'))  # 1
+    # print(rings('CC12CCC3(CCC3C1)C2'))  # 1
+    # print(rings('CC'))  # 0
+    # print(rings('C1CC2CCCC(C1)CCCC2'))  # 1
+    q = m.GetRingInfo()
+    rings = [set(r) for r in q.AtomRings()]
+    go_next = True
+    while go_next:
+        go_next = False
+        for i, j in combinations(range(len(rings)), 2):
+            if rings[i] & rings[j]:
+                q = rings[i] | rings[j]
+                del rings[j], rings[i]
+                rings.append(q)
+                go_next = True
+                break
+    return len(rings)
 
 
 def calc(smi, name):
@@ -29,8 +56,9 @@ def calc(smi, name):
             else:
                 fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
             qed = QED.qed(m)
+            nrings_fused = fused_ring_count(m)
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
-                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac
+                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
@@ -68,7 +96,8 @@ if __name__ == '__main__':
                                                  'Csp3: fraction of sp3 carbons\n'
                                                  'fmf: fraction of atoms belonging to Murcko framework\n'
                                                  'QED: quantitative estimate of drug-likeness\n'
-                                                 'HAC: heavy atom count',
+                                                 'HAC: heavy atom count\n'
+                                                 'NumRingsFused: number of rings considering fused and spirocycles as a single ring',
                                      formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'
@@ -91,7 +120,8 @@ if __name__ == '__main__':
     p = Pool(min(ncpu, cpu_count()))
 
     with open(out_fname, 'wt') as f:
-        f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3', 'fmf', 'QED', 'HAC']) + '\n')
+        f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
+                           'fmf', 'QED', 'HAC', 'NumRingsFused']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

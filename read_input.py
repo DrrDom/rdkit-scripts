@@ -90,6 +90,23 @@ def __read_sdf(fname, input_format, id_field_name=None, sanitize=True):
             yield PropertyMol(mol), mol_title
 
 
+def __read_sdf_confs(fname, input_format, id_field_name=None, sanitize=True, sdf_confs=False):
+    title = None
+    for mol, mol_title in __read_sdf(fname, input_format, id_field_name, sanitize):
+        if sdf_confs:
+            if title is None:
+                m = mol
+                title = mol_title
+            elif title == mol_title:
+                m.AddConformer(mol.GetConformer(0), assignId=True)
+            else:
+                yield m, title
+                m = mol
+                title = mol_title
+        else:
+            yield mol, mol_title
+
+
 def __read_smiles(fname, sanitize=True):
     with open(fname) as f:
         for line in f:
@@ -153,11 +170,12 @@ def __read_stdin_sdf(sanitize=True):
 #         yield mol, mol_name
 
 
-def read_input(fname, input_format=None, id_field_name=None, sanitize=True):
+def read_input(fname, input_format=None, id_field_name=None, sanitize=True, sdf_confs=False):
     """
     fname - is a file name, None if STDIN
     input_format - is a format of input data, cannot be None for STDIN
     id_field_name - name of the field containing molecule name, if None molecule title will be taken
+    sdf_confs - return consecutive molecules with the same name as a single Mol object with multiple conformers
     """
     if input_format is None:
         tmp = os.path.basename(fname).split('.')
@@ -174,7 +192,7 @@ def read_input(fname, input_format=None, id_field_name=None, sanitize=True):
         else:
             raise Exception("Input STDIN format '%s' is not supported. It can be only sdf, smi." % input_format)
     elif input_format in ("sdf", "sdf.gz"):
-        suppl = __read_sdf(os.path.abspath(fname), input_format, id_field_name, sanitize)
+        suppl = __read_sdf_confs(os.path.abspath(fname), input_format, id_field_name, sanitize, sdf_confs)
     elif input_format in ('smi'):
         suppl = __read_smiles(os.path.abspath(fname), sanitize)
     elif input_format == 'pkl':

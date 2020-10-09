@@ -5,6 +5,7 @@ import string
 import random
 import itertools
 from multiprocessing import Pool, cpu_count
+from functools import partial
 # import numpy as np
 from collections import defaultdict, Counter
 
@@ -97,16 +98,22 @@ class SvmSaver:
 # svm.save_mol_descriptors('mol2', {'d2': 1, 'd3': 2})
 
 
-def process_mol(mol, mol_title):
+def process_mol(mol, mol_title, descr_num):
+    # descr_num - list of int
     ps = load_multi_conf_mol(mol)
-    res = [p.get_descriptors() for p in ps]
+    res = []
+    for p in ps:
+        tmp = dict()
+        for n in descr_num:
+            tmp.update(p.get_descriptors(ncomb=n))
+        res.append(tmp)
     ids = [c.GetId() for c in mol.GetConformers()]
     ids, res = zip(*sorted(zip(ids, res)))  # reorder output by conf ids
     return mol_title, res
 
 
-def process_mol_map(items):
-    return process_mol(*items)
+def process_mol_map(items, descr_num):
+    return process_mol(*items, descr_num=descr_num)
 
 
 if __name__ == '__main__':
@@ -123,6 +130,9 @@ if __name__ == '__main__':
                              'implemented yet.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True,
                         help='text file with a computed descriptor matrix.')
+    parser.add_argument('-d', '--descr', metavar='INTEGER', default=[4], nargs='+', type=int,
+                        help='number of features in a single descriptor. Can be set from 1 to 4. Multiple entries are '
+                             'allowed. Default: 4.')
     parser.add_argument('-r', '--remove', metavar='NUMERIC', required=False, default=0.05, type=float,
                         help='minimal percentage of compounds with non-zero descriptor values to keep this descriptor '
                              'in the output matrix. Default: 0.05 (means 5%).')
@@ -138,6 +148,10 @@ if __name__ == '__main__':
     if args.remove < 0 or args.remove > 1:
         raise ValueError('Value of the "remove" argument is out of range [0, 1]')
 
+    for v in args.descr:
+        if v < 1 or v > 4:
+            raise ValueError('The number of features in a single descriptor should be within 1-4 range.')
+
     pool = Pool(max(min(args.ncpu, cpu_count()), 1))
 
     tmp_fname = os.path.splitext(args.output)[0] + '.' + ''.join(random.sample(string.ascii_lowercase, 6)) + '.txt'
@@ -146,7 +160,8 @@ if __name__ == '__main__':
     stat = defaultdict(set)
 
     # create temp file with all descriptors
-    for i, (mol_title, desc) in enumerate(pool.imap(process_mol_map, read_input(args.input), chunksize=1), 1):
+    for i, (mol_title, desc) in enumerate(pool.imap(partial(process_mol_map, descr_num=args.descr),
+                                                    read_input(args.input), chunksize=1), 1):
         print(mol_title, len(desc))
         for desc_dict in desc:
             if desc_dict:

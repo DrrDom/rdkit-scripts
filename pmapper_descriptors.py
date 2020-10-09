@@ -18,7 +18,7 @@ class SvmSaver:
         self.__fname = file_name
         self.__varnames_fname = os.path.splitext(file_name)[0] + '.colnames'
         self.__molnames_fname = os.path.splitext(file_name)[0] + '.rownames'
-        self.__varnames = []
+        self.__varnames = dict()
         if os.path.isfile(self.__fname):
             os.remove(self.__fname)
         if os.path.isfile(self.__molnames_fname):
@@ -28,19 +28,13 @@ class SvmSaver:
 
     def save_mol_descriptors(self, mol_name, mol_descr_dict):
 
-        values = []
+        new_varnames = list(mol_descr_dict.keys() - self.__varnames.keys())
+        for v in new_varnames:
+            self.__varnames[v] = len(self.__varnames)
 
-        for i, varname in enumerate(self.__varnames):
-            if varname in mol_descr_dict:
-                values.append((i, mol_descr_dict[varname]))
-
-        new_varnames = list(sorted(set(mol_descr_dict) - set(self.__varnames)))
-        for i, varname in enumerate(new_varnames):
-            values.append((len(self.__varnames) + i, mol_descr_dict[varname]))
+        values = {self.__varnames[k]: v for k, v in mol_descr_dict.items()}
 
         if values:  # values can be empty if all descriptors are zero
-
-            self.__varnames.extend(new_varnames)
 
             with open(self.__molnames_fname, 'at') as f:
                 f.write(mol_name + '\n')
@@ -50,7 +44,7 @@ class SvmSaver:
                     f.write('\n'.join(new_varnames) + '\n')
 
             with open(self.__fname, 'at') as f:
-                values = sorted(values)
+                values = sorted(values.items())
                 values_str = ('%i:%i' % (i, v) for i, v in values)
                 f.write(' '.join(values_str) + '\n')
 
@@ -152,7 +146,8 @@ if __name__ == '__main__':
     stat = defaultdict(set)
 
     # create temp file with all descriptors
-    for i, (mol_title, desc) in enumerate(pool.imap(process_mol_map, read_input(args.input), chunksize=10), 1):
+    for i, (mol_title, desc) in enumerate(pool.imap(process_mol_map, read_input(args.input), chunksize=1), 1):
+        print(mol_title, len(desc))
         for desc_dict in desc:
             if desc_dict:
                 ids = svm.save_mol_descriptors(mol_title, desc_dict)

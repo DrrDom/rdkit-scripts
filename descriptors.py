@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 import pandas as pd
-from functools import partial
 from multiprocessing import Pool
 from read_input import read_input
 from rdkit.Chem.AtomPairs.Pairs import GetAtomPairFingerprint
@@ -36,9 +36,11 @@ if __name__ == '__main__':
 
     mol_names = []
     fps = []
-    for mol_name, fp in pool.imap(funcs[args.descr], read_input(args.input)):
+    for i, (mol_name, fp) in enumerate(pool.imap(funcs[args.descr], read_input(args.input), chunksize=100), 1):
         mol_names.append(mol_name)
         fps.append(fp)
+        if i % 1000 == 0:
+            sys.stdout.write(f'\r{i} molecules were processed')
 
     d = pd.DataFrame(fps).fillna(0).astype(int)
     d.index = mol_names

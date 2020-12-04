@@ -9,7 +9,6 @@
 #==============================================================================
 
 import re
-import sys
 import argparse
 from itertools import chain
 
@@ -62,7 +61,6 @@ def main_params(in_fname, out_fname, title, field_names, all_fields, skip_value)
             field_names.remove('Title')
             field_names.insert(0, 'Title')
         ofs.write("\t".join(field_names) + "\n")
-        sys.stdout.write("\t".join(field_names) + "\n")
         for item in output:
             line = [item.get(f, '') for f in field_names]
             if skip_value:
@@ -76,7 +74,6 @@ def main_params(in_fname, out_fname, title, field_names, all_fields, skip_value)
                     if all(v == '' for v in line):
                         continue
             ofs.write("\t".join(line) + "\n")
-            sys.stdout.write("\t".join(line) + "\n")
 
 
 def main():

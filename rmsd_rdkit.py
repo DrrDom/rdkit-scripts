@@ -20,8 +20,8 @@ def get_coord(mol, indices=None):
     return tuple(output)
 
 
-def rmsd(mol, ref):
-    match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=True)
+def rmsd(mol, ref, chirality):
+    match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=chirality)
     if not match_indices:
         return None
     else:
@@ -38,7 +38,7 @@ def rmsd(mol, ref):
         return round(min_rmsd, 3)
 
 
-def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi):
+def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality):
 
     if ref_name.endswith('.mol2'):
         ref = Chem.MolFromMol2File(ref_name)
@@ -76,7 +76,7 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi):
             if mol is None:
                 print(f'{in_fname}\t{i}\tCannot read structure')
             else:
-                mol_rmsd = rmsd(mol, ref)
+                mol_rmsd = rmsd(mol, ref, chirality)
                 if mol_rmsd is not None:
                     print(f'{in_fname}\t{i}\t{mol_rmsd}')
                 else:
@@ -98,10 +98,13 @@ def main():
                              'orders.')
     parser.add_argument('-o', '--output', metavar='FILENAME',
                         help='output text file. If omitted output will be in stdout.')
+    parser.add_argument('-x', '--nochirality', action='store_true', default=False,
+                        help='choose this option if you want to omit matching chirality in substructure search. '
+                             'By default chirality is considered.')
 
     args = parser.parse_args()
 
-    main_params(args.input, args.input_smi, args.output, args.reference, args.refsmi)
+    main_params(args.input, args.input_smi, args.output, args.reference, args.refsmi, not args.nochirality)
 
 
 if __name__ == '__main__':

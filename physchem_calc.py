@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 __author__ = 'Pavel Polishchuk'
 
 import sys
@@ -8,6 +6,7 @@ from argparse import RawTextHelpFormatter
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors, QED
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
+from rdkit.Chem.EnumerateStereoisomers import GetStereoisomerCount
 from multiprocessing import Pool, cpu_count
 from itertools import combinations
 
@@ -38,6 +37,16 @@ def fused_ring_count(m):
     return len(rings)
 
 
+def count_hbd_hba_atoms(m):
+    HDonorSmarts = Chem.MolFromSmarts('[$([N;!H0;v3]),$([N;!H0;+1;v4]),$([O,S;H1;+0]),$([n;H1;+0])]')
+    HAcceptorSmarts = Chem.MolFromSmarts('[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),' +
+                                     '$([O,S;H0;v2]),$([O,S;-]),$([N;v3;!$(N-*=!@[O,N,P,S])]),' +
+                                     '$([nH0,o,s;+0])]')
+    HDonor = list(map(lambda x, y=HDonorSmarts: x.GetSubstructMatches(y), [m]))
+    HAcceptor = list(map(lambda x, y=HAcceptorSmarts: x.GetSubstructMatches(y), [m]))
+    return len(set(HDonor[0] + HAcceptor[0]))
+
+
 def calc(smi, name):
     m = Chem.MolFromSmiles(smi)
     if m is not None:
@@ -51,14 +60,16 @@ def calc(smi, name):
             mw = rdMolDescriptors._CalcMolWt(m)
             csp3 = rdMolDescriptors.CalcFractionCSP3(m)
             hac = m.GetNumHeavyAtoms()
+            nstereo = GetStereoisomerCount(m)
             if hac == 0:
                 fmf = 0
             else:
                 fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
             qed = QED.qed(m)
             nrings_fused = fused_ring_count(m)
+            num_atoms = count_hbd_hba_atoms(m)
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
-                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused
+                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nstereo, nrings_fused, num_atoms
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
@@ -97,7 +108,9 @@ if __name__ == '__main__':
                                                  'fmf: fraction of atoms belonging to Murcko framework\n'
                                                  'QED: quantitative estimate of drug-likeness\n'
                                                  'HAC: heavy atom count\n'
-                                                 'NumRingsFused: number of rings considering fused and spirocycles as a single ring',
+                                                 'StereoCenters: number of possible stereoisomers for a molecule\n'
+                                                 'NumRingsFused: number of rings considering fused and spirocycles as a single ring\n'
+                                                 'Num_HBA_HBD_atoms: number of H-bond acceptors and H-bond donors atoms\n',
                                      formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'
@@ -121,7 +134,7 @@ if __name__ == '__main__':
 
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
-                           'fmf', 'QED', 'HAC', 'NumRingsFused']) + '\n')
+                           'fmf', 'QED', 'HAC', 'StereoCenters', 'NumRingsFused', 'Num_HBA_HBD_atoms']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

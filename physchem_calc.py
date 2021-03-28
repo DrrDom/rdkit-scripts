@@ -39,7 +39,6 @@ def fused_ring_count(m):
 
 
 def count_hbd_hba_atoms(m):
-    global HDonorSmarts, HAcceptorSmarts
     HDonor = m.GetSubstructMatches(HDonorSmarts)
     HAcceptor = m.GetSubstructMatches(HAcceptorSmarts)
     return len(set(HDonor + HAcceptor))
@@ -50,6 +49,7 @@ def calc(smi, name):
     if m is not None:
         try:
             hba = rdMolDescriptors.CalcNumHBA(m)
+
             hbd = rdMolDescriptors.CalcNumHBD(m)
             nrings = rdMolDescriptors.CalcNumRings(m)
             rtb = rdMolDescriptors.CalcNumRotatableBonds(m)
@@ -58,7 +58,6 @@ def calc(smi, name):
             mw = rdMolDescriptors._CalcMolWt(m)
             csp3 = rdMolDescriptors.CalcFractionCSP3(m)
             hac = m.GetNumHeavyAtoms()
-            n_chiral_centers = len(FindMolChiralCenters(m, includeUnassigned=True))
             if hac == 0:
                 fmf = 0
             else:
@@ -66,10 +65,11 @@ def calc(smi, name):
             qed = QED.qed(m)
             nrings_fused = fused_ring_count(m)
             n_unique_hba_hbd_atoms = count_hbd_hba_atoms(m)
-            max_ring_size = max([len(i) for i in m.GetRingInfo().AtomRings()])
+            max_ring_size = len(max(m.GetRingInfo().AtomRings(), key=len, default=()))
+            n_chiral_centers = len(FindMolChiralCenters(m, includeUnassigned=True))
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
-                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, n_chiral_centers, nrings_fused, n_unique_hba_hbd_atoms, \
-                   max_ring_size
+                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused, n_unique_hba_hbd_atoms, \
+                   max_ring_size, n_chiral_centers
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
@@ -108,10 +108,10 @@ if __name__ == '__main__':
                                                  'fmf: fraction of atoms belonging to Murcko framework\n'
                                                  'QED: quantitative estimate of drug-likeness\n'
                                                  'HAC: heavy atom count\n'
-                                                 'ChiralCenters: number of chiral centers (assigned and unassigned)\n'
                                                  'NumRingsFused: number of rings considering fused and spirocycles as a single ring\n'
                                                  'unique_HBAD: number of unique H-bond acceptors and H-bond donors atoms\n'
-                                                 'max_ring_size: maximum ring size in a molecule',
+                                                 'max_ring_size: maximum ring size in a molecule\n'
+                                                 'ChiralCenters: number of chiral centers (assigned and unassigned)\n',
                                      formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'
@@ -140,7 +140,8 @@ if __name__ == '__main__':
 
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
-                           'fmf', 'QED', 'HAC', 'ChiralCenters', 'NumRingsFused', 'unique_HBAD', 'max_ring_size']) + '\n')
+                           'fmf', 'QED', 'HAC', 'NumRingsFused', 'unique_HBAD', 'max_ring_size',
+                           'ChiralCenters']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

@@ -6,7 +6,7 @@ import sys
 import argparse
 from argparse import RawTextHelpFormatter
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, QED
+from rdkit.Chem import rdMolDescriptors, QED, FindMolChiralCenters
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
 from multiprocessing import Pool, cpu_count
 from itertools import combinations
@@ -38,11 +38,18 @@ def fused_ring_count(m):
     return len(rings)
 
 
+def count_hbd_hba_atoms(m):
+    HDonor = m.GetSubstructMatches(HDonorSmarts)
+    HAcceptor = m.GetSubstructMatches(HAcceptorSmarts)
+    return len(set(HDonor + HAcceptor))
+
+
 def calc(smi, name):
     m = Chem.MolFromSmiles(smi)
     if m is not None:
         try:
             hba = rdMolDescriptors.CalcNumHBA(m)
+
             hbd = rdMolDescriptors.CalcNumHBD(m)
             nrings = rdMolDescriptors.CalcNumRings(m)
             rtb = rdMolDescriptors.CalcNumRotatableBonds(m)
@@ -57,8 +64,12 @@ def calc(smi, name):
                 fmf = GetScaffoldForMol(m).GetNumHeavyAtoms() / hac
             qed = QED.qed(m)
             nrings_fused = fused_ring_count(m)
+            n_unique_hba_hbd_atoms = count_hbd_hba_atoms(m)
+            max_ring_size = len(max(m.GetRingInfo().AtomRings(), key=len, default=()))
+            n_chiral_centers = len(FindMolChiralCenters(m, includeUnassigned=True))
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
-                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused
+                   round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused, n_unique_hba_hbd_atoms, \
+                   max_ring_size, n_chiral_centers
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
@@ -97,7 +108,10 @@ if __name__ == '__main__':
                                                  'fmf: fraction of atoms belonging to Murcko framework\n'
                                                  'QED: quantitative estimate of drug-likeness\n'
                                                  'HAC: heavy atom count\n'
-                                                 'NumRingsFused: number of rings considering fused and spirocycles as a single ring',
+                                                 'NumRingsFused: number of rings considering fused and spirocycles as a single ring\n'
+                                                 'unique_HBAD: number of unique H-bond acceptors and H-bond donors atoms\n'
+                                                 'max_ring_size: maximum ring size in a molecule\n'
+                                                 'ChiralCenters: number of chiral centers (assigned and unassigned)\n',
                                      formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'
@@ -117,11 +131,17 @@ if __name__ == '__main__':
         if o == "ncpu": ncpu = int(v)
         if o == "verbose": verbose = v
 
+    HDonorSmarts = Chem.MolFromSmarts('[$([N;!H0;v3]),$([N;!H0;+1;v4]),$([O,S;H1;+0]),$([n;H1;+0])]')
+    HAcceptorSmarts = Chem.MolFromSmarts('[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),' +
+                                         '$([O,S;H0;v2]),$([O,S;-]),$([N;v3;!$(N-*=!@[O,N,P,S])]),' +
+                                         '$([nH0,o,s;+0])]')
+
     p = Pool(min(ncpu, cpu_count()))
 
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
-                           'fmf', 'QED', 'HAC', 'NumRingsFused']) + '\n')
+                           'fmf', 'QED', 'HAC', 'NumRingsFused', 'unique_HBAD', 'max_ring_size',
+                           'ChiralCenters']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

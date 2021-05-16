@@ -8,6 +8,7 @@ import re
 import sys
 
 from rdkit import Chem
+from rdkit.Chem import rdFMCS
 
 from read_input import read_pdbqt
 
@@ -23,21 +24,41 @@ def get_coord(mol, indices=None):
 
 
 def rmsd(mol, ref, chirality):
+    def rmsd_calc(r_coord, m_coord):
+        s = 0
+        for r, m in zip(r_coord, m_coord):
+            s += ((r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2) ** 0.5
+        s = s / len(r_coord)
+        return s
+
     match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=chirality)
+    min_rmsd = float('inf')
     if not match_indices:
-        return None
+        mcs = rdFMCS.FindMCS([mol, ref], threshold=1.0,
+                             ringMatchesRingOnly=False, completeRingsOnly=False,
+                             matchChiralTag=chirality)
+        if not mcs:
+            return None
+        patt = Chem.MolFromSmarts(mcs.smartsString)
+        refMatch, molMatch = ref.GetSubstructMatches(patt, uniquify=False), \
+                             mol.GetSubstructMatches(patt, uniquify=False)
+
+        for ids_ref in refMatch:
+            for ids_mol in molMatch:
+                ref_coord = get_coord(ref, ids_ref)
+                mol_coord = get_coord(mol, ids_mol)
+                s = rmsd_calc(ref_coord, mol_coord)
+                if s < min_rmsd:
+                    min_rmsd = s
     else:
         ref_coord = get_coord(ref)
-        min_rmsd = float('inf')
         for ids in match_indices:
             mol_coord = get_coord(mol, ids)
-            s = 0
-            for r, m in zip(ref_coord, mol_coord):
-                s += ((r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2) ** 0.5
-            s = s / len(ref_coord)
+            s = rmsd_calc(ref_coord, mol_coord)
             if s < min_rmsd:
                 min_rmsd = s
-        return round(min_rmsd, 3)
+
+    return round(min_rmsd, 3)
 
 
 def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex):
@@ -61,7 +82,8 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
                 if len(values) >= 2:
                     smis[values[1]] = values[0]
                 else:
-                    sys.stderr.write(f'Line "{line}" in input smiles does not have two fields- SMILES and mol name. Skipped.')
+                    sys.stderr.write(
+                        f'Line "{line}" in input smiles does not have two fields- SMILES and mol name. Skipped.')
 
     for in_fname in input_fnames:
 
@@ -88,8 +110,9 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
 
 
 def main():
-
-    parser = argparse.ArgumentParser(description='Calc RMSD between a reference molecule and docked poses.')
+    parser = argparse.ArgumentParser(description='''Calc RMSD between a reference molecule and docked poses.
+                                                 If reference molecule is not substructure of the docked molecule
+                                                 maximum common substructure is used''')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, nargs='*',
                         help='input MOL2/PDBQT files to compare with a reference molecule.')
     parser.add_argument('--input_smi', metavar='FILENAME', required=False, default=None,

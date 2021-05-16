@@ -41,9 +41,9 @@ def rmsd(mol, ref, chirality):
 def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality):
 
     if ref_name.endswith('.mol2'):
-        ref = Chem.MolFromMol2File(ref_name)
+        ref = Chem.MolFromMol2File(ref_name, removeHs=True)
     elif ref_name.endswith('.pdbqt'):
-        ref = read_pdbqt(ref_name, refsmi)[0]
+        ref = read_pdbqt(ref_name, refsmi, removeHs=True)[0]
     else:
         sys.stderr.write('Wrong format of the reference file. Only MOL2 and PDBQT files are allowed.')
         raise ValueError

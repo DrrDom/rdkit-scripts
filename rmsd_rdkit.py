@@ -2,11 +2,13 @@
 
 __author__ = 'Pavel Polishchuk'
 
+import argparse
+import os
+import re
+import sys
 
 from rdkit import Chem
-import argparse
-import sys
-import os
+
 from read_input import read_pdbqt
 
 
@@ -38,8 +40,7 @@ def rmsd(mol, ref, chirality):
         return round(min_rmsd, 3)
 
 
-def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality):
-
+def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex):
     if ref_name.endswith('.mol2'):
         ref = Chem.MolFromMol2File(ref_name, removeHs=True)
     elif ref_name.endswith('.pdbqt'):
@@ -67,7 +68,10 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
         if in_fname.endswith('.mol2'):
             mols = [Chem.MolFromMol2File(in_fname)]
         elif in_fname.endswith('.pdbqt') or in_fname.endswith('.pdbqt_out'):
-            mols = read_pdbqt(in_fname, smis[os.path.splitext(os.path.basename(in_fname))[0]])
+            if regex is not None:
+                mols = read_pdbqt(in_fname, smis[re.search(regex, os.path.basename(in_fname)).group()], removeHs=True)
+            else:
+                mols = read_pdbqt(in_fname, smis[os.path.splitext(os.path.basename(in_fname))[0]], removeHs=True)
         else:
             sys.stderr.write(f'Wrong format of the input file - {in_fname}. Only MOL2 and PDBQT files are allowed.')
             raise ValueError
@@ -96,6 +100,11 @@ def main():
     parser.add_argument('-s', '--refsmi', metavar='SMILES or FILENAME', required=False, default=None,
                         help='SMILES of the reference molecule. It requires only for PDBQT input to assign bond '
                              'orders.')
+    parser.add_argument('--regex', metavar='REGEX', required=False, default=None,
+                        help='Use it if there are complex names of pdbqt files. '
+                             'Use regex search to establish a ratio between reference smiles name and pdbqt filename.'
+                             'If None filename of pdbqt file will be taken to find reference smiles'
+                             'Example: MOLID[0-9]*')
     parser.add_argument('-o', '--output', metavar='FILENAME',
                         help='output text file. If omitted output will be in stdout.')
     parser.add_argument('-x', '--nochirality', action='store_true', default=False,
@@ -109,7 +118,7 @@ def main():
     else:
         refsmi = args.refsmi
 
-    main_params(args.input, args.input_smi, args.output, args.reference, args.refsmi, not args.nochirality)
+    main_params(args.input, args.input_smi, args.output, args.reference, refsmi, not args.nochirality, args.regex)
 
 
 if __name__ == '__main__':

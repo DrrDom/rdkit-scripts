@@ -93,7 +93,7 @@ def main():
                              'tab-separated. Molecule names should correspond to PDBQT file names.')
     parser.add_argument('-r', '--reference', metavar='FILENAME', required=True,
                         help='reference molecule (from X-ray complex structure) in MOL2/PDBQT format.')
-    parser.add_argument('-s', '--refsmi', metavar='SMILES', required=False, default=None,
+    parser.add_argument('-s', '--refsmi', metavar='SMILES or FILENAME', required=False, default=None,
                         help='SMILES of the reference molecule. It requires only for PDBQT input to assign bond '
                              'orders.')
     parser.add_argument('-o', '--output', metavar='FILENAME',
@@ -103,6 +103,11 @@ def main():
                              'By default chirality is considered.')
 
     args = parser.parse_args()
+    if (args.refsmi is not None) and (args.refsmi.endswith('.smi') or args.refsmi.endswith('.smiles')):
+        with open(args.refsmi) as inp:
+            refsmi = inp.read().strip()
+    else:
+        refsmi = args.refsmi
 
     main_params(args.input, args.input_smi, args.output, args.reference, args.refsmi, not args.nochirality)
 

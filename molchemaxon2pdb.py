@@ -17,7 +17,7 @@ from rdkit.Chem import AllChem
 
 import read_input
 
-cmd_run = "cxcalc majormicrospecies -H {pH} -f {out_format} -M '{fname}'"
+cmd_run = "cxcalc majormicrospecies -H {pH} -f {out_format} -M -K '{fname}'"
 
 
 def convert2pdb(m, name, outpath, preserve_coord):

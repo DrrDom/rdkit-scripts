@@ -9,6 +9,7 @@ __author__ = 'aleksandra'
 import argparse
 import os
 import subprocess
+import sys
 from io import BytesIO
 from multiprocessing import Pool, cpu_count
 
@@ -22,13 +23,19 @@ cmd_run = "cxcalc majormicrospecies -H {pH} -f {out_format} -M -K '{fname}'"
 
 def convert2pdb(m, name, outpath, preserve_coord):
     if not m:
-        print('Incorrect molecule:', name)
+        sys.stderr.write('Incorrect molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
+        sys.stderr.flush()
         return None
 
     m = Chem.AddHs(m, addCoords=True)
     if not preserve_coord:
-        AllChem.EmbedMolecule(m, AllChem.ETKDG())
-        AllChem.UFFOptimizeMolecule(m, maxIters=100)
+        try:
+            AllChem.EmbedMolecule(m, AllChem.ETKDG())
+            AllChem.UFFOptimizeMolecule(m, maxIters=100)
+        except:
+            sys.stderr.write('Incorrect conformation of molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
+            sys.stderr.flush()
+            return None
 
     pdb = Chem.MolToPDBBlock(m)
     with open(os.path.join(outpath, name + '.pdb'), 'w') as data:

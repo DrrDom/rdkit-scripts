@@ -20,6 +20,13 @@ import read_input
 
 cmd_run = "cxcalc majormicrospecies -H {pH} -f {out_format} -M -K '{fname}'"
 
+def gen_conf(mol, useRandomCoords, randomSeed):
+    params = AllChem.ETKDG()
+    params.useRandomCoords = useRandomCoords
+    params.randomSeed = randomSeed
+    conf_stat = AllChem.EmbedMolecule(mol, params)
+    return mol, conf_stat
+
 
 def convert2pdb(m, name, outpath, preserve_coord):
     if not m:
@@ -29,16 +36,12 @@ def convert2pdb(m, name, outpath, preserve_coord):
 
     m = Chem.AddHs(m, addCoords=True)
     if not preserve_coord:
-        params = AllChem.ETKDG()
-        params.useRandomCoords = False
-        params.randomSeed = 1024
-        conf_stat = AllChem.EmbedMolecule(m, params)
+        m, conf_stat = gen_conf(m, useRandomCoords=False, randomSeed=1024)
         if conf_stat == -1:
-            # if molecule big enough and rdkit cannot generate a conformation - use params.useRandomCoords = True
-            params.useRandomCoords = True
-            conf_stat = AllChem.EmbedMolecule(m, params)
+            # if molecule is big enough and rdkit cannot generate a conformation - use params.useRandomCoords = True
+            m, conf_stat = gen_conf(m, useRandomCoords=True, randomSeed=1024)
             if conf_stat == -1:
-                sys.stderr.write('Could not get conformation of molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
+                sys.stderr.write('Could not get conformation of the molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
                 sys.stderr.flush()
                 return None
         AllChem.UFFOptimizeMolecule(m, maxIters=100)
@@ -48,7 +51,7 @@ def convert2pdb(m, name, outpath, preserve_coord):
         data.write(pdb)
 
 
-def convertsdf2pdb(args):
+def convertmol2pdb(args):
     convert2pdb(*args)
 
 
@@ -98,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_sdf', metavar='FILENAME', default=None,
                         help='Output filename to save major tautomer at given pH in SDF format. Saving without hydrogens.')
     parser.add_argument('--preserve_coord', action='store_true', default=False,
-                        help='Preserve previous coordinates. This argument is used only for input SDF format.')
+                        help='If set current coordinates will be saved. Is used only for input SDF format.')
     parser.add_argument('-n', '--ncpu', metavar='INTEGER', required=False, default=1, type=int,
                         help='number of CPUs to use for computation.')
     args = parser.parse_args()

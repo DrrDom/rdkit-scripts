@@ -125,9 +125,9 @@ def main():
                              'orders.')
     parser.add_argument('--regex', metavar='REGEX', required=False, default=None,
                         help='Use it if there are complex names of pdbqt files. '
-                             'Use regex search to establish a ratio between reference smiles name and pdbqt filename.'
-                             'If None filename of pdbqt file will be taken to find reference smiles'
-                             'Example: MOLID[0-9]*')
+                             'Use regex search to establish a relationship between reference smiles name and pdbqt '
+                             'filename. If None filename of pdbqt file will be taken to find reference smiles '
+                             'Examples: MOLID[0-9]* or .*(?=_out.pdbqt)')
     parser.add_argument('-o', '--output', metavar='FILENAME',
                         help='output text file. If omitted output will be in stdout.')
     parser.add_argument('-x', '--nochirality', action='store_true', default=False,

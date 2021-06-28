@@ -29,13 +29,19 @@ def convert2pdb(m, name, outpath, preserve_coord):
 
     m = Chem.AddHs(m, addCoords=True)
     if not preserve_coord:
-        try:
-            AllChem.EmbedMolecule(m, AllChem.ETKDG())
-            AllChem.UFFOptimizeMolecule(m, maxIters=100)
-        except:
-            sys.stderr.write('Incorrect conformation of molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
-            sys.stderr.flush()
-            return None
+        params = AllChem.ETKDG()
+        params.useRandomCoords = False
+        params.randomSeed = 1024
+        conf_stat = AllChem.EmbedMolecule(m, params)
+        if conf_stat == -1:
+            # if molecule big enough and rdkit cannot generate a conformation - use params.useRandomCoords = True
+            params.useRandomCoords = True
+            conf_stat = AllChem.EmbedMolecule(m, params)
+            if conf_stat == -1:
+                sys.stderr.write('Could not get conformation of molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
+                sys.stderr.flush()
+                return None
+        AllChem.UFFOptimizeMolecule(m, maxIters=100)
 
     pdb = Chem.MolToPDBBlock(m)
     with open(os.path.join(outpath, name + '.pdb'), 'w') as data:

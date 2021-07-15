@@ -53,38 +53,39 @@ def convert2pdb(m, name, outpath, preserve_coord):
         data.write(pdb)
 
 
-def convertsdf2pdb(args):
-    convert2pdb(*args)
+def convertmol2pdb(_args):
+    convert2pdb(*_args)
 
 
-def main(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf):
+def iter_molname(fname, field):
+    for _, name in read_input.read_input(fname,
+                                         input_format=None,
+                                         id_field_name=field,
+                                         sanitize=False):
+        yield name
+
+
+def main(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf, no_protonation):
     if outpath and not os.path.exists(outpath):
         os.mkdir(outpath)
 
-    sdf_pHprotonate = subprocess.check_output(cmd_run.format(fname=fname,
-                                                             out_format='sdf', pH=pH), shell=True)
-    if save_sdf is not None:
-        with open(save_sdf, 'w') as out_sdf:
-            out_sdf.write(sdf_pHprotonate.decode())
+    if no_protonation:
+        mol_gener = read_input.read_input(fname,
+                                          input_format=None,
+                                          id_field_name=field,
+                                          sanitize=True)
+    else:
+        sdf_pHprotonate = subprocess.check_output(cmd_run.format(fname=fname, out_format='sdf', pH=pH), shell=True)
+        if save_sdf is not None:
+            with open(save_sdf, 'w') as out_sdf:
+                out_sdf.write(sdf_pHprotonate.decode())
+        mol_gener = zip(Chem.ForwardSDMolSupplier(BytesIO(sdf_pHprotonate), sanitize=True), iter_molname(fname, field))
 
     if ncpu > 1:
         p = Pool(max(1, min(ncpu, cpu_count())))
-        p.map(convertsdf2pdb, [(i, j[1], outpath, preserve_coord) for i, j in
-                               zip(Chem.ForwardSDMolSupplier(BytesIO(sdf_pHprotonate), sanitize=True),
-                                   read_input.read_input(
-                                       fname,
-                                       input_format=None,
-                                       id_field_name=field,
-                                       sanitize=False))])
+        p.map(convertmol2pdb, [(m, name, outpath, preserve_coord) for m, name in mol_gener])
     else:
-        list(
-            map(convertsdf2pdb, [(i, j[1], outpath, preserve_coord) for i, j in
-                                 zip(Chem.ForwardSDMolSupplier(BytesIO(sdf_pHprotonate), sanitize=True),
-                                     read_input.read_input(
-                                         fname,
-                                         input_format=None,
-                                         id_field_name=field,
-                                         sanitize=False))]))
+        list(map(convertmol2pdb, [(m, name, outpath, preserve_coord) for m, name in mol_gener]))
 
 
 if __name__ == '__main__':
@@ -106,10 +107,12 @@ if __name__ == '__main__':
                         help='If set current coordinates will be saved. Is used only for input SDF format.')
     parser.add_argument('-n', '--ncpu', metavar='INTEGER', required=False, default=1, type=int,
                         help='number of CPUs to use for computation.')
+    parser.add_argument('--no_protonation', action='store_true', default=False,
+                        help="if set ChemAxon protonation won't be used.")
     args = parser.parse_args()
 
     if args.preserve_coord and args.input.split('.')[-1].lower() != 'sdf':
         raise ValueError('Please use --preserve_coord argument only for input SDF format.')
 
     main(args.input, args.output if args.output is not None else os.getcwd(), args.ncpu, args.field_name, args.pH,
-         args.preserve_coord, args.save_sdf)
+         args.preserve_coord, args.save_sdf, args.no_protonation)

@@ -7,6 +7,7 @@
 __author__ = 'aleksandra'
 
 import argparse
+from functools import partial
 import os
 import subprocess
 import sys
@@ -29,7 +30,8 @@ def gen_conf(mol, useRandomCoords, randomSeed):
     return mol, conf_stat
 
 
-def convert2pdb(m, name, outpath, preserve_coord):
+def convert2pdb(mol_iter, outpath, preserve_coord):
+    m, name = mol_iter
     if not m:
         sys.stderr.write('Incorrect molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
         sys.stderr.flush()
@@ -51,10 +53,6 @@ def convert2pdb(m, name, outpath, preserve_coord):
     pdb = Chem.MolToPDBBlock(m)
     with open(os.path.join(outpath, name + '.pdb'), 'w') as data:
         data.write(pdb)
-
-
-def convertmol2pdb(_args):
-    convert2pdb(*_args)
 
 
 def iter_molname(fname, field):
@@ -83,9 +81,9 @@ def main(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf, no_protonati
 
     if ncpu > 1:
         p = Pool(max(1, min(ncpu, cpu_count())))
-        p.map(convertmol2pdb, [(m, name, outpath, preserve_coord) for m, name in mol_gener])
+        p.map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord), mol_gener)
     else:
-        list(map(convertmol2pdb, [(m, name, outpath, preserve_coord) for m, name in mol_gener]))
+        list(map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord), mol_gener))
 
 
 if __name__ == '__main__':

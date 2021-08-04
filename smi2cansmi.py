@@ -16,10 +16,7 @@ from rdkit import Chem
 
 
 def calc(line, sep):
-    print(line)
-    print(sep)
     items = line.strip().split(sep)
-    print(items)
     m = Chem.MolFromSmiles(items[0])
     if m:
         smi = Chem.MolToSmiles(m, isomericSmiles=True)

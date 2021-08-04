@@ -11,11 +11,15 @@
 import sys
 import argparse
 from multiprocessing import Pool, cpu_count
+from functools import partial
 from rdkit import Chem
 
 
-def calc(line):
-    items = line.strip().split()
+def calc(line, sep):
+    print(line)
+    print(sep)
+    items = line.strip().split(sep)
+    print(items)
     m = Chem.MolFromSmiles(items[0])
     if m:
         smi = Chem.MolToSmiles(m, isomericSmiles=True)
@@ -41,6 +45,8 @@ def main():
                              'SDF (*.sdf, *.sdf.gz), Python pickled (*.pkl).')
     parser.add_argument('-o', '--output', metavar='output.smi', required=True,
                         help='output file with canonical SMILES.')
+    parser.add_argument('-s', '--sep', metavar='STRING', required=False, default=None,
+                        help='separator. Default: whitespace.')
     parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1, type=int,
                         help='number of CPUs to use for computation.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -51,9 +57,9 @@ def main():
     with open(args.output, 'wt') as f:
         if args.ncpu > 1:
             p = Pool(max(1, min(args.ncpu, cpu_count())))
-            iterator = p.imap(calc, (line for line in open(args.input)), chunksize=1000)
+            iterator = p.imap(partial(calc, sep=args.sep), (line for line in open(args.input)), chunksize=1000)
         else:
-            iterator = (calc(line) for line in open(args.input))
+            iterator = (calc(line, args.sep) for line in open(args.input))
         for i, res in enumerate(iterator, 1):
             if res[0]:
                 f.write('\t'.join(res) + '\n')

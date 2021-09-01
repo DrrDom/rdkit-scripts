@@ -23,7 +23,7 @@ cmd_run = "cxcalc majormicrospecies -H {pH} -f {out_format} -M -K '{fname}'"
 
 
 def gen_conf(mol, useRandomCoords, randomSeed):
-    params = AllChem.ETKDG()
+    params = AllChem.ETKDGv3()
     params.useRandomCoords = useRandomCoords
     params.randomSeed = randomSeed
     conf_stat = AllChem.EmbedMolecule(mol, params)

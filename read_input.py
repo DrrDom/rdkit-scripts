@@ -105,7 +105,8 @@ def __read_sdf_confs(fname, input_format, id_field_name=None, sanitize=True, sdf
                 title = mol_title
         else:
             yield mol, mol_title
-    yield m, title
+    if sdf_confs:
+        yield m, title
 
 
 def __read_smiles(fname, sanitize=True):

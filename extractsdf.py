@@ -90,7 +90,7 @@ def main():
     parser.add_argument('-a', '--all_fields', action='store_true', default=False,
                         help='extract all fields.')
     parser.add_argument('--skip', default=None,
-                        help='specify field value which will be skipped nd replaced with empty string. '
+                        help='specify field value which will be skipped and replaced with empty string. '
                              'Usually NA can be set to skip missing values. '
                              'By default no values are skipped.')
 

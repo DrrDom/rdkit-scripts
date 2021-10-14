@@ -30,7 +30,8 @@ def main_params(input_fname, output_fname):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert SDF to multi-conformer PKL file.')
+    parser = argparse.ArgumentParser(description='Convert SDF to multi-conformer PKL file. '
+                                                 'Conformers are recognized by mol title.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
                         help='input SDF file.')
     parser.add_argument('-o', '--output', metavar='output.pkl', required=True,

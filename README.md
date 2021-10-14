@@ -10,4 +10,4 @@ Comments and recommendations for contributors:
 4. Ideally scripts should be able to communicate with STDIN and STDOUT to combine them with pipes. I implemented this in `gen_stereo_rdkit.py` and `gen_conf_rdkit.py`.
 5. All scripts can contain errors, so use them on your own risk. If you will find a mistake please create the issue and we will fix it. However, we constantly revise old scripts and fix errors because every found mistake is penultimate.
 
-#####Happy RDKiiting! :)
+##### Happy RDKiiting! :)

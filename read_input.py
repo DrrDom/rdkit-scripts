@@ -127,13 +127,14 @@ def __read_stdin_smiles(sanitize=True):
     line = sys.stdin.readline()
     while line:
         tmp = line.strip().split()
-        mol = Chem.MolFromSmiles(tmp[0], sanitize=sanitize)
-        if mol is not None:
-                if len(tmp) > 1:
-                    mol_title = tmp[1]
-                else:
-                    mol_title = __get_smi_as_molname(mol)
-                yield mol, mol_title
+        if tmp:
+            mol = Chem.MolFromSmiles(tmp[0], sanitize=sanitize)
+            if mol is not None:
+                    if len(tmp) > 1:
+                        mol_title = tmp[1]
+                    else:
+                        mol_title = __get_smi_as_molname(mol)
+                    yield mol, mol_title
         line = sys.stdin.readline()
 
 

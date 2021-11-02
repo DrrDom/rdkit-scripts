@@ -14,6 +14,8 @@ def main():
     parser.add_argument('-d', '--ids', metavar='mol_ids', required=False, type=str, default=None,
                         help='comma separated list of mol ids in DB or a text file with mol ids on individual lines. '
                              'If omitted all records in DB will be saved to SDF.')
+    parser.add_argument('-x', '--no_fields', action='store_true', default=False,
+                        help='choose this option if you do not want to retrieve any further fields from a database.')
 
     args = parser.parse_args()
 
@@ -27,7 +29,10 @@ def main():
 
     conn = sqlite3.connect(args.input)
     cur = conn.cursor()
-    sql = "SELECT mol_block, docking_score FROM mols"
+    if args.no_fields:
+        sql = "SELECT mol_block FROM mols"
+    else:
+        sql = "SELECT mol_block, docking_score FROM mols"
     if ids is not None:
         sql += f" WHERE id IN ({','.join(['?'] * len(ids))})"
         res = cur.execute(sql, ids)

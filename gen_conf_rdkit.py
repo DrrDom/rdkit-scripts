@@ -122,10 +122,13 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
                 else:
                     mol.SetProp("_Name", mol_name)
                     e = dict()
-                    for item in  mol.GetProp('energy').split(';'):
-                        conf_id, v = item.split(' ')
-                        e[int(conf_id)] = v
-                    string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) + f'>  <energy>\n{e[conf_id]}\n\n' for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
+                    if mol.HasProp('energy'):
+                        for item in mol.GetProp('energy').split(';'):
+                            conf_id, v = item.split(' ')
+                            e[int(conf_id)] = v
+                        string = "$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) + f'>  <energy>\n{e[conf_id]}\n\n' for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
+                    else:
+                        string = "\n$$$$\n".join(Chem.MolToMolBlock(mol, confId=conf_id) for conf_id in sorted(c.GetId() for c in mol.GetConformers()))
                     if string:   # wrong molecules (no valid conformers) will result in empty string
                         string += "$$$$\n"
                         if out_fname is None:

@@ -6,7 +6,8 @@ import sqlite3
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extract mol blocks of specified mol ids into SDF file.')
+    parser = argparse.ArgumentParser(description='Extract mol blocks of specified mol ids into SDF file and extract '
+                                                 'their docking scores.')
     parser.add_argument('-i', '--input', metavar='input.db', required=True, type=str,
                         help='SQLite DB, which is output of vina_dock script.')
     parser.add_argument('-o', '--output', metavar='output.sdf', required=True, type=str,
@@ -14,6 +15,8 @@ def main():
     parser.add_argument('-d', '--ids', metavar='mol_ids', required=False, type=str, default=None,
                         help='comma separated list of mol ids in DB or a text file with mol ids on individual lines. '
                              'If omitted all records in DB will be saved to SDF.')
+    parser.add_argument('-f', '--first_entry', action='store_true', default=False,
+                        help='retrieve only the first entry of each molecule from the database.')
     parser.add_argument('-x', '--no_fields', action='store_true', default=False,
                         help='choose this option if you do not want to retrieve any further fields from a database.')
 
@@ -35,6 +38,10 @@ def main():
         sql = "SELECT mol_block, docking_score FROM mols"
     if ids is not None:
         sql += f" WHERE id IN ({','.join(['?'] * len(ids))})"
+    if args.first_entry:
+        sql += " GROUP BY id ORDER BY rowid LIMIT 1"
+
+    if ids is not None:
         res = cur.execute(sql, ids)
     else:
         res = cur.execute(sql)

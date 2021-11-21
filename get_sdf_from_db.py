@@ -39,7 +39,7 @@ def main():
     if ids is not None:
         sql += f" WHERE id IN ({','.join(['?'] * len(ids))})"
     if args.first_entry:
-        sql += " GROUP BY id ORDER BY rowid LIMIT 1"
+        sql += " GROUP BY id HAVING MIN(rowid) ORDER BY rowid"
 
     if ids is not None:
         res = cur.execute(sql, ids)
@@ -47,10 +47,13 @@ def main():
         res = cur.execute(sql)
 
     with open(args.output, 'wt')as f:
-        for mol_block, docking_score in res:
+        for item in res:
+            mol_block = item[0]
             f.write(mol_block)
-            f.write('>  <docking_score>\n')
-            f.write(f'{docking_score}\n\n')
+            if len(item) == 2:
+                docking_score = item[1]
+                f.write('>  <docking_score>\n')
+                f.write(f'{docking_score}\n\n')
             f.write('$$$$\n')
 
 

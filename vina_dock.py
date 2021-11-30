@@ -237,18 +237,22 @@ def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbn
     return mol_id
 
 
-def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhaustiveness, seed, ncpu, use_dask):
+def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhaustiveness, seed, ncpu, use_dask,
+                 add_sql=None):
     '''
     This function should update output db with docked poses and scores. Docked poses should be stored as pdbqt (source)
     and mol block. All other post-processing will be performed separately.
     :param dbname:
     :param receptor_pdbqt_fname:
-    :param protein_setup:
+    :param protein_setup: text file with vina grid box parameters
     :param protonation: True or False
-    :param iteration: int
+    :param exhaustiveness: int
+    :param seed: int
     :param ncpu: int
     :param use_dask: indicate whether or not using dask cluster
     :type use_dask: bool
+    :param add_sql: string with additional selection requirements which will be concatenated to the main SQL query
+                    with AND operator, e.g. "iteration = 1".
     :return:
     '''
 
@@ -267,9 +271,10 @@ def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhau
     with sqlite3.connect(dbname) as conn:
         cur = conn.cursor()
         smi_field_name = 'smi_protonated' if protonation else 'smi'
-        smiles_dict = dict(cur.execute(f"SELECT id, {smi_field_name} "
-                                       f"FROM mols "
-                                       f"WHERE docking_score IS NULL"))
+        sql = f"SELECT id, {smi_field_name} FROM mols WHERE docking_score IS NULL"
+        if isinstance(add_sql, str) and add_sql:
+            sql += f" AND {add_sql}"
+        smiles_dict = dict(cur.execute(sql))
     if not smiles_dict:
         return
 
@@ -427,9 +432,6 @@ def main():
     setup.write(list(conn.execute('SELECT protein_setup FROM setup'))[0][0])
     setup.flush()
     protonation = list(conn.execute('SELECT protonation FROM setup'))[0][0]
-
-    print(protein.name)
-    print(setup.name)
 
     iter_docking(dbname=args.output, receptor_pdbqt_fname=protein.name, protein_setup=setup.name,
                  protonation=protonation, exhaustiveness=args.exhaustiveness, seed=args.seed, ncpu=args.ncpu,

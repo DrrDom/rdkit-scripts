@@ -5,7 +5,7 @@ from rdkit import Chem
 from read_input import read_input
 
 
-def main(input_fname, output_fname):
+def calc(input_fname, output_fname):
     w = Chem.SDWriter(output_fname)
     for mol, mol_name in read_input(input_fname):
         mol.SetProp('_Name', mol_name)
@@ -14,7 +14,7 @@ def main(input_fname, output_fname):
     w.close()
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Convert multi-conformer PKL file to SDF.')
     parser.add_argument('-i', '--input', metavar='input.pkl', required=True,
                         help='input SDF file.')
@@ -22,4 +22,8 @@ if __name__ == '__main__':
                         help='output pickle file.')
 
     args = parser.parse_args()
-    main(args.input, args.output)
+    calc(args.input, args.output)
+
+
+if __name__ == '__main__':
+    main()

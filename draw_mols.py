@@ -17,7 +17,7 @@ DrawingOptions.atomLabelFontSize = 300
 DrawingOptions.elemDict = {}
 
 
-def main(input_fname, output_fname, mols_per_file, mols_per_row, template):
+def process(input_fname, output_fname, mols_per_file, mols_per_row, template):
 
     mols = []
     with open(input_fname) as f:
@@ -69,7 +69,7 @@ def main(input_fname, output_fname, mols_per_file, mols_per_row, template):
         pyvips.Image.svgload_buffer(img.encode('utf-8'), dpi=300).write_to_file(output_fname + str(j).zfill(3) + '.png')
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Create images from input molecules. If a reference structure was '
                                                  'supplied all molecule coordinates will be aligned correspondingly.')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, type=str,
@@ -85,4 +85,8 @@ if __name__ == '__main__':
                              'alignment.')
     args = parser.parse_args()
 
-    main(args.input, args.output, args.mols_per_file, args.mols_per_row, args.template)
+    process(args.input, args.output, args.mols_per_file, args.mols_per_row, args.template)
+
+
+if __name__ == '__main__':
+    main()

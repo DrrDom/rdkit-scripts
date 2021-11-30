@@ -19,7 +19,7 @@ def process_line(line):
         return None
 
 
-if __name__ == '__main__':
+def main():
 
     pool = Pool(processes=30)
     
@@ -37,3 +37,6 @@ if __name__ == '__main__':
 
     pool.close()
 
+
+if __name__ == '__main__':
+    main()

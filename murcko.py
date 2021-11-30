@@ -42,8 +42,7 @@ def read_smi(fname, sep, start_pos, nlines):
                     raise StopIteration
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Return Murcko scaffold ignoring stereoconfiguration.')
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. No header.')
@@ -81,3 +80,7 @@ if __name__ == '__main__':
             if verbose and (i + 1) % 1000 == 0:
                 sys.stderr.write('\r%i molecules passed' % (i + 1))
                 sys.stderr.flush()
+
+
+if __name__ == '__main__':
+    main()

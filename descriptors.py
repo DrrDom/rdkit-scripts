@@ -14,7 +14,7 @@ def calc_ap(items):
     return mol_name, fp
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Calculate RDKit descriptors.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True,
@@ -46,3 +46,7 @@ if __name__ == '__main__':
     d.index = mol_names
     d.index.name = 'mol'
     d.to_csv(args.output, sep='\t')
+
+
+if __name__ == '__main__':
+    main()

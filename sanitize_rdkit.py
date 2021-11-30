@@ -46,7 +46,7 @@ def get_unspec_double_bonds(m):
     return res
 
 
-def main(in_fname, out_fname, error_fname, input_format, output_format):
+def calc(in_fname, out_fname, error_fname, input_format, output_format):
 
     if out_fname is None:
         out_fname = '/dev/stdout'
@@ -97,8 +97,7 @@ def main(in_fname, out_fname, error_fname, input_format, output_format):
     wout.close()
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Removes compounds with rdkit sanitization errors and add to output '
                                                  'molecules number of double bonds, unspecified stereocenters and '
                                                  'total charge.')
@@ -127,6 +126,8 @@ if __name__ == '__main__':
     if in_fname == "/dev/stdin":
         in_fname = None
 
-    main(in_fname, out_fname, error_fname, input_format, output_format)
+    calc(in_fname, out_fname, error_fname, input_format, output_format)
 
 
+if __name__ == '__main__':
+    main()

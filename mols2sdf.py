@@ -16,7 +16,7 @@ import argparse
 from rdkit import Chem
 
 
-def main(input_fnames, output_fname):
+def calc(input_fnames, output_fname):
 
     w = Chem.SDWriter(output_fname)
 
@@ -33,7 +33,7 @@ def main(input_fnames, output_fname):
     w.close()
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Convert multiple MOL files to SDF. No checks are performed.')
     parser.add_argument('-i', '--input', metavar='input.mol', required=True, nargs='*',
                         help='input MOL files.')
@@ -45,4 +45,8 @@ if __name__ == '__main__':
         if o == "input": input_fnames = v
         if o == "output": output_fname = v
 
-    main(input_fnames, output_fname)
+    calc(input_fnames, output_fname)
+
+
+if __name__ == '__main__':
+    main()

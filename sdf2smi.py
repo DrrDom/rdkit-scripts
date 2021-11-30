@@ -7,7 +7,7 @@ import argparse
 from rdkit import Chem
 
 
-def main(input_fname, output_fname, field_name, extract_fields, sep):
+def calc(input_fname, output_fname, field_name, extract_fields, sep):
     with open(output_fname, "wt") as f:
         for m in Chem.SDMolSupplier(input_fname):
             if m:
@@ -25,7 +25,7 @@ def main(input_fname, output_fname, field_name, extract_fields, sep):
                     f.write(smi + sep + n + '\n')
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Convert SDF to canonical isomeric SMILES with mol titles.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
                         help='input SDF file.')
@@ -48,4 +48,8 @@ if __name__ == '__main__':
         if o == "extract_fields": extract_fields = v
         if o == "sep": sep = v
 
-    main(input_fname, output_fname, field_name, extract_fields, sep)
+    calc(input_fname, output_fname, field_name, extract_fields, sep)
+
+
+if __name__ == '__main__':
+    main()

@@ -25,8 +25,7 @@ def match(args):
         return False, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Select compounds matching the specified substructure.')
     parser.add_argument('-i', '--in', metavar='FILENAME', required=True,
                         help='input SMILES/SDF file. SMILES file should contain no header.')
@@ -85,3 +84,6 @@ if __name__ == '__main__':
                     sys.stderr.write('\r%i molecules passed; matches: %i' % (i, match_counter))
                     sys.stderr.flush()
 
+
+if __name__ == '__main__':
+    main()

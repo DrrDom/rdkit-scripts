@@ -3,7 +3,7 @@ import argparse
 import os
 
 
-def main(pdb_fname):
+def calc(pdb_fname):
     pdb = Chem.MolFromPDBFile(pdb_fname, sanitize=False)
     chains = Chem.SplitMolByPDBChainId(pdb)
     for name, mol in chains.items():
@@ -12,7 +12,7 @@ def main(pdb_fname):
         w.close()
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Split PDB by chains and save to separate PDB files.')
     parser.add_argument('-i', '--in', metavar='input.pdb', required=True,
                         help='input PDB file.')
@@ -21,6 +21,8 @@ if __name__ == '__main__':
     for o, v in args.items():
         if o == "in": pdb_fname = v
 
-    main(pdb_fname=pdb_fname)
+    calc(pdb_fname=pdb_fname)
 
 
+if __name__ == '__main__':
+    main()

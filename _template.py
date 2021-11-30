@@ -9,7 +9,7 @@ from rdkit import Chem
 from multiprocessing import Pool, cpu_count
 
 
-def main(input_fname, output_fname, ncpu, verbose):
+def calc(input_fname, output_fname, ncpu, verbose):
 
     pool = Pool(max(min(cpu_count(), ncpu), 1))
 
@@ -18,7 +18,7 @@ def main(input_fname, output_fname, ncpu, verbose):
     # unnecessary imports should be removed as well
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='INSERT DESCRIPTION HERE.')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, type=str,
                         help='input SDF or SMILES file.')
@@ -30,4 +30,8 @@ if __name__ == '__main__':
                         help='print progress to STDERR.')
     args = parser.parse_args()
 
-    main(args.input, args.output, args.ncpu, args.verbose)
+    calc(args.input, args.output, args.ncpu, args.verbose)
+
+
+if __name__ == '__main__':
+    main()

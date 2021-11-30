@@ -29,7 +29,7 @@ def main_params(input_fname, output_fname):
             pickle.dump((mol, mol_name), f)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Convert SDF to multi-conformer PKL file. '
                                                  'Conformers are recognized by mol title.')
     parser.add_argument('-i', '--input', metavar='input.sdf', required=True,
@@ -43,3 +43,7 @@ if __name__ == '__main__':
         if o == "output": output_fname = v
 
     main_params(input_fname, output_fname)
+
+
+if __name__ == '__main__':
+    main()

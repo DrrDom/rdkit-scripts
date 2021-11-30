@@ -116,7 +116,7 @@ def process_mol_map(items, descr_num):
     return process_mol(*items, descr_num=descr_num)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Calculate 3D pharmacophore descriptors and remove rarely '
                                                  'occurred ones. Descriptors are generated using binning step 1A. '
                                                  'A temporary file is created containing all descriptors which are '
@@ -210,3 +210,6 @@ if __name__ == '__main__':
             os.remove(os.path.splitext(tmp_fname)[0] + '.colnames')
             os.remove(os.path.splitext(tmp_fname)[0] + '.rownames')
 
+
+if __name__ == '__main__':
+    main()

@@ -47,7 +47,7 @@ def convert_to_pdb(input, output_path, nprocess):
         continue
 
 
-def entry_point():
+def main():
     parser = argparse.ArgumentParser(description='Convert input molecules to individual PDB files. '
                                                  'Hydrogens will be added and a random conformer will be generated '
                                                  'if the molecule does not have 3D coordinates.',
@@ -68,4 +68,4 @@ def entry_point():
 
 
 if __name__ == '__main__':
-    entry_point()
+    main()

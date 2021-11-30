@@ -45,7 +45,7 @@ def pool_init(value1, value2):
     noH = value2
 
 
-def main(in_fname, out_fname, rms, noH, ncpu, verbose):
+def calc(in_fname, out_fname, rms, noH, ncpu, verbose):
     p = Pool(ncpu, initializer=pool_init, initargs=[rms, noH])
     with open(out_fname, 'wb') as fout:
         for i, res in enumerate(p.imap_unordered(filter_conf, read_input(in_fname), chunksize=20), 1):
@@ -55,8 +55,7 @@ def main(in_fname, out_fname, rms, noH, ncpu, verbose):
     sys.stderr.write('\n')
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Filter conformers by RMS.')
     parser.add_argument('-i', '--input', metavar='input.pkl', required=True,
                         help='input file in PKL format containing pickled molecules with multiple conformations.')
@@ -80,4 +79,8 @@ if __name__ == '__main__':
         if o == "ncpu": ncpu = int(v)
         if o == "verbose": verbose = v
 
-    main(in_fname, out_fname, rms, noH, ncpu, verbose)
+    calc(in_fname, out_fname, rms, noH, ncpu, verbose)
+
+
+if __name__ == '__main__':
+    main()

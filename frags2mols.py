@@ -23,7 +23,7 @@ def process_mol_map(items):
     return process_mol(*items)
 
 
-def main(input_fname, output_fname, ncpu, verbose):
+def calc(input_fname, output_fname, ncpu, verbose):
 
     pool = Pool(max(min(cpu_count(), ncpu), 1))
 
@@ -35,7 +35,7 @@ def main(input_fname, output_fname, ncpu, verbose):
                 sys.stderr.write(f'\r{j} molecules passed')
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Save disconnected components of input molecules as '
                                                  'individual molecules with added suffix to the name.')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, type=str,
@@ -47,4 +47,8 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='print progress to STDERR.')
     args = parser.parse_args()
-    main(args.input, args.output, args.ncpu, args.verbose)
+    calc(args.input, args.output, args.ncpu, args.verbose)
+
+
+if __name__ == '__main__':
+    main()

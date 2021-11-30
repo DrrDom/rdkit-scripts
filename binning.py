@@ -32,8 +32,7 @@ def load_x(fname):
     return np.array(x), np.array(var_names), np.array(mol_names)
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Binning of input values according to specified thresholds.')
     parser.add_argument('-i', '--in', metavar='input.txt', required=True,
                         help='input text file (tab-separated). The first column contains compound names. '
@@ -66,3 +65,7 @@ if __name__ == '__main__':
         f.write('Name\t' + '\t'.join(var_names) + '\n')
         for i, row in enumerate(x):
             f.write(mol_names[i] + '\t' + '\t'.join(map(str, row)) + '\n')
+
+
+if __name__ == '__main__':
+    main()

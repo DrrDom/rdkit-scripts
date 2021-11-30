@@ -39,7 +39,7 @@ def init():
     catalog = FilterCatalog(params)
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Test input molecules for PAINS.')
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Fields are whitespace-separated.')
@@ -76,3 +76,6 @@ if __name__ == '__main__':
                 sys.stderr.write('\r%i molecules passed' % (i + 1))
                 sys.stderr.flush()
 
+
+if __name__ == '__main__':
+    main()

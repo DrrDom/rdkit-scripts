@@ -12,6 +12,12 @@ from multiprocessing import Pool, cpu_count
 from itertools import combinations
 
 
+HDonorSmarts = Chem.MolFromSmarts('[$([N;!H0;v3]),$([N;!H0;+1;v4]),$([O,S;H1;+0]),$([n;H1;+0])]')
+HAcceptorSmarts = Chem.MolFromSmarts('[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),' +
+                                     '$([O,S;H0;v2]),$([O,S;-]),$([N;v3;!$(N-*=!@[O,N,P,S])]),' +
+                                     '$([nH0,o,s;+0])]')
+
+
 def fused_ring_count(m):
     # count rings considering fused and spiro cycles as a single ring system
     # print(rings('C1CC23CCC2CC13'))  # 1
@@ -92,8 +98,7 @@ def read_smi(fname, sep="\t"):
                 yield items[0], items[1]
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Calculate some physicochemical parameters with RDKit.\n'
                                                  'HBA: number of H-bond acceptors\n'
                                                  'HBD: number of H-bond donors\n'
@@ -131,11 +136,6 @@ if __name__ == '__main__':
         if o == "ncpu": ncpu = int(v)
         if o == "verbose": verbose = v
 
-    HDonorSmarts = Chem.MolFromSmarts('[$([N;!H0;v3]),$([N;!H0;+1;v4]),$([O,S;H1;+0]),$([n;H1;+0])]')
-    HAcceptorSmarts = Chem.MolFromSmarts('[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),' +
-                                         '$([O,S;H0;v2]),$([O,S;-]),$([N;v3;!$(N-*=!@[O,N,P,S])]),' +
-                                         '$([nH0,o,s;+0])]')
-
     p = Pool(min(ncpu, cpu_count()))
 
     with open(out_fname, 'wt') as f:
@@ -148,3 +148,7 @@ if __name__ == '__main__':
             if verbose and i % 100 == 0:
                 sys.stderr.write('\r%i molecules passed' % (i + 1))
                 sys.stderr.flush()
+
+
+if __name__ == '__main__':
+    main()

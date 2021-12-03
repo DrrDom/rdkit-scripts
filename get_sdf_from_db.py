@@ -33,9 +33,9 @@ def main():
     conn = sqlite3.connect(args.input)
     cur = conn.cursor()
     if args.no_fields:
-        sql = "SELECT mol_block FROM mols"
+        sql = "SELECT mol_block FROM mols WHERE mol_block IS NOT NULL"
     else:
-        sql = "SELECT mol_block, docking_score FROM mols"
+        sql = "SELECT mol_block, docking_score FROM mols WHERE mol_block IS NOT NULL"
     if ids is not None:
         sql += f" WHERE id IN ({','.join(['?'] * len(ids))})"
     if args.first_entry:

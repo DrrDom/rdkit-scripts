@@ -354,7 +354,8 @@ def save_sdf(db_fname):
         cur = conn.cursor()
         for mol_block, mol_name, score in cur.execute('SELECT mol_block, id, docking_score '
                                                       'FROM mols '
-                                                      'WHERE docking_score IS NOT NULL'):
+                                                      'WHERE docking_score IS NOT NULL '
+                                                      'AND mol_block IS NOT NULL'):
             w.write(mol_block + '\n')
             w.write(f'>  <ID>\n{mol_name}\n\n')
             w.write(f'>  <docking_score>\n{score}\n\n')

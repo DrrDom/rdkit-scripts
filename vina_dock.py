@@ -93,8 +93,11 @@ def mk_prepare_ligand_string(molecule_string, build_macrocycle=True, add_water=F
         charge_model = ob.OBChargeModel.FindType("Gasteiger")
         charge_model.ComputeCharges(mol)
 
+    m = Chem.MolFromMolBlock(molecule_string)
+    amide_rigid = len(m.GetSubstructMatch(Chem.MolFromSmarts('[C;!R](=O)[#7]([!#1])[!#1]'))) == 0
+
     preparator = MoleculePreparation(merge_hydrogens=merge_hydrogen, macrocycle=build_macrocycle,
-                                     hydrate=add_water, amide_rigid=True)
+                                     hydrate=add_water, amide_rigid=amide_rigid)
                                      #additional parametrs
                                      #rigidify_bonds_smarts=[], rigidify_bonds_indices=[])
     preparator.prepare(mol)

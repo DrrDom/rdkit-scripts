@@ -210,7 +210,8 @@ def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbn
             conn.execute("""UPDATE mols
                                SET pdb_block = ?,
                                    docking_score = ?,
-                                   mol_block = ?
+                                   mol_block = ?,
+                                   time = CURRENT_TIMESTAMP
                                WHERE
                                    id = ?
                             """, (pdbqt_out, score, mol_block, mol_id))
@@ -307,7 +308,7 @@ def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhau
         sys.stderr.write(f'\r{i} molecules were docked\n')
 
 
-def create_db(db_fname, input_fname, protonation, pdbqt_fname, protein_setup_fname):
+def create_db(db_fname, input_fname, protonation, pdbqt_fname, protein_setup_fname, prefix):
     conn = sqlite3.connect(db_fname)
     cur = conn.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS mols
@@ -317,11 +318,14 @@ def create_db(db_fname, input_fname, protonation, pdbqt_fname, protein_setup_fna
              smi_protonated TEXT,
              docking_score REAL,
              pdb_block TEXT,
-             mol_block TEXT
+             mol_block TEXT,
+             time TEXT
             )""")
     conn.commit()
-    data = [(mol_name, Chem.MolToSmiles(mol, isomericSmiles=True), None, None, None, None) for mol, mol_name in read_input(input_fname)]
-    cur.executemany(f'INSERT INTO mols VALUES({",".join("?" * 6)})', data)
+    data = [(f'{prefix}-{mol_name}' if prefix else mol_name,
+             Chem.MolToSmiles(mol, isomericSmiles=True))
+            for mol, mol_name in read_input(input_fname)]
+    cur.executemany(f'INSERT INTO mols (id, smi) VALUES(?, ?)', data)
     conn.commit()
 
     cur.execute("""CREATE TABLE IF NOT EXISTS setup
@@ -405,6 +409,9 @@ def main():
                              'argument must be specified because dask cannot access ordinary tmp locations.')
     parser.add_argument('--seed', metavar='INTEGER', required=False, type=int, default=0,
                         help='seed to make results reproducible.')
+    parser.add_argument('--prefix', metavar='STRING', required=False, type=str, default=None,
+                        help='prefix which will be added to all names. This might be useful if multiple runs are made '
+                             'which will be analyzed together.')
     parser.add_argument('-c', '--ncpu', default=1, type=cpu_type,
                         help='number of cpus.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -420,7 +427,7 @@ def main():
         dask_client = Client(open(args.hostfile).readline().strip() + ':8786')
 
     if not os.path.isfile(args.output):
-        create_db(args.output, args.input, not args.no_protonation, args.protein, args.protein_setup)
+        create_db(args.output, args.input, not args.no_protonation, args.protein, args.protein_setup, args.prefix)
 
     add_protonation(args.output)
 

@@ -166,12 +166,13 @@ def fix_pdbqt(pdbqt_block):
     return '\n'.join(pdbqt_fixed)
 
 
-def docking(ligands_pdbqt_string, receptor_pdbqt_fname, center, box_size, exhaustiveness, seed, ncpu):
+def docking(ligands_pdbqt_string, receptor_pdbqt_fname, center, box_size, exhaustiveness, seed, n_poses, ncpu):
     '''
     :param ligands_pdbqt_string: str or list of strings
     :param receptor_pdbqt_fname:
     :param center: (x_float,y_float,z_float)
     :param box_size: (size_x_int, size_y_int, size_z_int)
+    :param n_poses: int
     :param ncpu: int
     :return: (score_top, pdbqt_string_block)
     '''
@@ -179,7 +180,7 @@ def docking(ligands_pdbqt_string, receptor_pdbqt_fname, center, box_size, exhaus
     v.set_receptor(rigid_pdbqt_filename=receptor_pdbqt_fname)
     v.set_ligand_from_string(ligands_pdbqt_string)
     v.compute_vina_maps(center=center, box_size=box_size, spacing=1)
-    v.dock(exhaustiveness=exhaustiveness, n_poses=9)
+    v.dock(exhaustiveness=exhaustiveness, n_poses=n_poses)
 
     return v.energies(n_poses=1)[0][0], v.poses(n_poses=1)
 
@@ -205,7 +206,7 @@ def pdbqt2molblock(pdbqt_block, smi, mol_id):
     return mol_block
 
 
-def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbname, seed, exhaustiveness, ncpu,
+def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbname, seed, exhaustiveness, n_poses, ncpu,
                         lock=None):
 
     def insert_data(dbname, pdbqt_out, score, mol_block, mol_id):
@@ -223,7 +224,7 @@ def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbn
     if ligand_pdbqt is None:
         return mol_id
     score, pdbqt_out = docking(ligands_pdbqt_string=ligand_pdbqt, receptor_pdbqt_fname=receptor_pdbqt_fname,
-                               center=center, box_size=box_size, exhaustiveness=exhaustiveness, seed=seed, ncpu=ncpu)
+                               center=center, box_size=box_size, exhaustiveness=exhaustiveness, seed=seed, n_poses=n_poses, ncpu=ncpu)
     mol_block = pdbqt2molblock(pdbqt_out, smi, mol_id)
     if mol_block is None:
         pdbqt_out = fix_pdbqt(pdbqt_out)
@@ -241,7 +242,7 @@ def process_mol_docking(mol_id, smi, receptor_pdbqt_fname, center, box_size, dbn
     return mol_id
 
 
-def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhaustiveness, seed, ncpu, use_dask,
+def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhaustiveness, seed, n_poses, ncpu, use_dask,
                  add_sql=None):
     '''
     This function should update output db with docked poses and scores. Docked poses should be stored as pdbqt (source)
@@ -252,6 +253,7 @@ def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhau
     :param protonation: True or False
     :param exhaustiveness: int
     :param seed: int
+    :param n_poses: int
     :param ncpu: int
     :param use_dask: indicate whether or not using dask cluster
     :type use_dask: bool
@@ -290,7 +292,7 @@ def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhau
         for i, mol_id in enumerate(b.starmap(process_mol_docking,
                                              receptor_pdbqt_fname=receptor_pdbqt_fname, center=center,
                                              box_size=box_size, dbname=dbname, exhaustiveness=exhaustiveness,
-                                             seed=seed, ncpu=1).compute(),
+                                             seed=seed, n_poses=n_poses, ncpu=1).compute(),
                                    1):
             if i % 100 == 0:
                 sys.stderr.write(f'\r{i} molecules were docked')
@@ -304,7 +306,7 @@ def iter_docking(dbname, receptor_pdbqt_fname, protein_setup, protonation, exhau
         for i, mol_id in enumerate(pool.starmap(partial(process_mol_docking, dbname=dbname,
                                                         receptor_pdbqt_fname=receptor_pdbqt_fname,
                                                         center=center, box_size=box_size, seed=seed,
-                                                        exhaustiveness=exhaustiveness, ncpu=1, lock=lock),
+                                                        exhaustiveness=exhaustiveness, n_poses=n_poses, ncpu=1, lock=lock),
                                                 smiles_dict.items()), 1):
             if i % 100 == 0:
                 sys.stderr.write(f'\r{i} molecules were docked')
@@ -416,6 +418,8 @@ def main():
     parser.add_argument('--prefix', metavar='STRING', required=False, type=str, default=None,
                         help='prefix which will be added to all names. This might be useful if multiple runs are made '
                              'which will be analyzed together.')
+    parser.add_argument('--n_poses', default=50, type=int,
+                        help='Vina setting: number of pose to generate for docking search. Only the first best will be return.')
     parser.add_argument('-c', '--ncpu', default=1, type=cpu_type,
                         help='number of cpus.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -445,7 +449,7 @@ def main():
     protonation = list(conn.execute('SELECT protonation FROM setup'))[0][0]
 
     iter_docking(dbname=args.output, receptor_pdbqt_fname=protein.name, protein_setup=setup.name,
-                 protonation=protonation, exhaustiveness=args.exhaustiveness, seed=args.seed, ncpu=args.ncpu,
+                 protonation=protonation, exhaustiveness=args.exhaustiveness, seed=args.seed, n_poses=args.n_poses, ncpu=args.ncpu,
                  use_dask=args.hostfile is not None)
 
     if args.sdf:

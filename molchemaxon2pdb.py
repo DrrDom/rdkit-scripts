@@ -30,7 +30,7 @@ def gen_conf(mol, useRandomCoords, randomSeed):
     return mol, conf_stat
 
 
-def convert2pdb(mol_iter, outpath, preserve_coord, out_format):
+def convert2pdb(mol_iter, outpath, preserve_coord, seed, out_format):
     m, name = mol_iter
     if not m:
         sys.stderr.write('Incorrect molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
@@ -39,10 +39,10 @@ def convert2pdb(mol_iter, outpath, preserve_coord, out_format):
 
     m = Chem.AddHs(m, addCoords=True)
     if not preserve_coord:
-        m, conf_stat = gen_conf(m, useRandomCoords=False, randomSeed=1024)
+        m, conf_stat = gen_conf(m, useRandomCoords=False, randomSeed=seed)
         if conf_stat == -1:
             # if molecule is big enough and rdkit cannot generate a conformation - use params.useRandomCoords = True
-            m, conf_stat = gen_conf(m, useRandomCoords=True, randomSeed=1024)
+            m, conf_stat = gen_conf(m, useRandomCoords=True, randomSeed=seed)
             if conf_stat == -1:
                 sys.stderr.write(
                     'Could not get conformation of the molecule: {0}\t{1}\n'.format(Chem.MolToSmiles(m), name))
@@ -68,7 +68,7 @@ def iter_molname(fname, field):
         yield name
 
 
-def calc(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf, no_protonation, out_format):
+def calc(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf, no_protonation, seed, out_format):
     if outpath and not os.path.exists(outpath):
         os.mkdir(outpath)
 
@@ -86,10 +86,10 @@ def calc(fname, outpath, ncpu, field, pH, preserve_coord, save_sdf, no_protonati
 
     if ncpu > 1:
         p = Pool(max(1, min(ncpu, cpu_count())))
-        p.map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord,
+        p.map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord, seed=seed,
                       out_format=out_format), mol_gener)
     else:
-        list(map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord,
+        list(map(partial(convert2pdb, outpath=outpath, preserve_coord=preserve_coord, seed=seed,
                          out_format=out_format), mol_gener))
 
 
@@ -116,6 +116,8 @@ def main():
                         help='number of CPUs to use for computation.')
     parser.add_argument('--no_protonation', action='store_true', default=False,
                         help="if set ChemAxon protonation won't be used.")
+    parser.add_argument('--seed', metavar='INTEGER', required=False, type=int, default=0,
+                        help='seed to make results reproducible.')
     parser.add_argument('--out_format', metavar='SDF or PDB', default='pdb', type=lambda x: x.lower(),
                         help="Choose one of the output formats - SDF or PDB (case insensitive).")
     args = parser.parse_args()
@@ -124,7 +126,7 @@ def main():
         raise ValueError('Please use --preserve_coord argument only for input SDF format.')
 
     calc(args.input, args.output if args.output is not None else os.getcwd(), args.ncpu, args.field_name, args.pH,
-         args.preserve_coord, args.save_sdf, args.no_protonation, out_format=args.out_format)
+         args.preserve_coord, args.save_sdf, args.no_protonation, seed=args.seed, out_format=args.out_format)
 
 
 if __name__ == '__main__':

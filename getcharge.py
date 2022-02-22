@@ -27,4 +27,4 @@ if __name__ == '__main__':
         sys.stdout.write(str(formal_charge))
     else:
         with open(args.output, 'a') as out:
-            out.write('\t'.join([args.input, formal_charge]))
+            out.write('\t'.join([args.input, str(formal_charge)])+'\n')

@@ -157,7 +157,7 @@ def main():
                                                  '  - gnina - wget https://github.com/gnina/gnina/releases/download/v1.0.1/gnina\n'
                                                  'possible problems during installation, for example, version "CXXABI_1.3.8" not found (required by ./gnina)\n'
                                                  'you need install libstdc++.so.6 and add way to this file in .bashrc\n'
-                                                 'for example: export LD_LIBRARY_PATH="$LD_LIBRARY_PATH":/lib64/'
+                                                 'for example: export LD_LIBRARY_PATH="$LD_LIBRARY_PATH":/lib64/\n'
                                                  '  - openbabel - conda install -c conda-forge openbabel\n'
                                                  '  - meeko - pip install git+https://github.com/forlilab/Meeko@7b1a60d9451eabaeb16b08a4a497cf8e695acc63\n'
                                                  '  - Chemaxon cxcalc utility\n\n'

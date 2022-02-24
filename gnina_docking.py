@@ -7,6 +7,7 @@ from functools import partial
 from multiprocessing import Pool, Manager
 
 import dask
+import shutil
 import random, string
 from os import system
 from dask import bag
@@ -31,7 +32,7 @@ def docking(script_file, ligand_pdbqt_file, ligand_out_fname, receptor_pdbqt_fna
 
     system(
         f'{script_file} --receptor {receptor_pdbqt_fname} --ligand {ligand_pdbqt_file} --out {ligand_out_fname} '
-        f'--config {protein_setup} --exhaustiveness {exhaustiveness} --seed {seed} --scoring {scoring} --cpu {ncpu}'
+        f'--config {protein_setup} --exhaustiveness {exhaustiveness} --seed {seed} --scoring {scoring} --cpu {ncpu} '
         f'--addH {addH}')
 
 
@@ -60,7 +61,8 @@ def process_mol_docking(mol_id, smi, script_file, tmpdir, receptor_pdbqt_fname, 
         return mol_id
 
     ligand_pdbqt_file = save_pdbqt_to_file(ligand_pdbqt, mol_id, tmpdir)
-    ligand_out_fname = ligand_pdbqt_file.rsplit('.', 1)[0] + '_dock.pdbqt' # saving result after docking to file
+    ligand_out_fname = ligand_pdbqt_file.rsplit('.', 1)[0] + '_dock.pdbqt'  # saving result after docking to file
+    print('ligand_out_fname', ligand_out_fname)
 
     docking(script_file=script_file, ligand_pdbqt_file=ligand_pdbqt_file, ligand_out_fname=ligand_out_fname,
                                receptor_pdbqt_fname=receptor_pdbqt_fname, protein_setup=protein_setup,
@@ -205,7 +207,7 @@ def main():
                         help='path to the dir with installed GNINA.')
     parser.add_argument('--scoring', metavar='STRING', required=True,
                         help='type of scoring function.')
-    parser.add_argument('--addH', action='store_true', required=False, default=False,
+    parser.add_argument('--addH', action='store_true', default=False,
                         help='add hydrogens in ligands.')
 
     args = parser.parse_args()
@@ -244,6 +246,9 @@ def main():
 
     if args.sdf:
         save_sdf(args.output)
+
+    if args.tmpdir is None:
+        shutil.rmtree(tmpdir, ignore_errors=True) # to delete temporary dir with files adter docking
 
 
 if __name__ == '__main__':

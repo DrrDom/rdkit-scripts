@@ -28,12 +28,12 @@ def save_pdbqt_to_file(pdbqt, mol_id, dir_name):
 
 
 def docking(script_file, ligand_pdbqt_file, ligand_out_fname, receptor_pdbqt_fname, protein_setup, exhaustiveness, seed,
-            scoring, addH, ncpu):
+            scoring, addH, cnn_scoring, cnn, ncpu):
 
     system(
         f'{script_file} --receptor {receptor_pdbqt_fname} --ligand {ligand_pdbqt_file} --out {ligand_out_fname} '
         f'--config {protein_setup} --exhaustiveness {exhaustiveness} --seed {seed} --scoring {scoring} --cpu {ncpu} '
-        f'--addH {addH}')
+        f'--addH {addH} --cnn_scoring {cnn_scoring} --cnn {cnn}')
 
 
 def get_pdbqt_and_score(ligand_out_fname):
@@ -43,7 +43,7 @@ def get_pdbqt_and_score(ligand_out_fname):
 
 
 def process_mol_docking(mol_id, smi, script_file, tmpdir, receptor_pdbqt_fname, protein_setup, dbname, seed, exhaustiveness,
-                        scoring, addH, ncpu, lock=None):
+                        scoring, addH, cnn_scoring, cnn, ncpu, lock=None):
 
     def insert_data(dbname, pdbqt_out, score, mol_block, mol_id):
         with sqlite3.connect(dbname) as conn:
@@ -66,7 +66,8 @@ def process_mol_docking(mol_id, smi, script_file, tmpdir, receptor_pdbqt_fname, 
 
     docking(script_file=script_file, ligand_pdbqt_file=ligand_pdbqt_file, ligand_out_fname=ligand_out_fname,
                                receptor_pdbqt_fname=receptor_pdbqt_fname, protein_setup=protein_setup,
-                               exhaustiveness=exhaustiveness, seed=seed, scoring=scoring, addH=addH, ncpu=ncpu)
+                               exhaustiveness=exhaustiveness, seed=seed, scoring=scoring, addH=addH,
+                               cnn_scoring=cnn_scoring, cnn=cnn, ncpu=ncpu)
 
     score, pdbqt_out = get_pdbqt_and_score(ligand_out_fname)
 
@@ -88,7 +89,7 @@ def process_mol_docking(mol_id, smi, script_file, tmpdir, receptor_pdbqt_fname, 
 
 
 def iter_docking(script_file, tmpdir, dbname, receptor_pdbqt_fname, protein_setup, protonation, exhaustiveness, seed,
-                 scoring, addH, ncpu, use_dask, add_sql=None):
+                 scoring, addH, cnn_scoring, cnn, ncpu, use_dask, add_sql=None):
     '''
     This function should update output db with docked poses and scores. Docked poses should be stored as pdbqt (source)
     and mol block. All other post-processing will be performed separately.
@@ -137,9 +138,9 @@ def iter_docking(script_file, tmpdir, dbname, receptor_pdbqt_fname, protein_setu
         lock = manager.Lock()
         i = 0
         for i, mol_id in enumerate(pool.starmap(partial(process_mol_docking, script_file=script_file, tmpdir=tmpdir, dbname=dbname,
-                                                        receptor_pdbqt_fname=receptor_pdbqt_fname,
-                                                        protein_setup=protein_setup, seed=seed,
-                                                        exhaustiveness=exhaustiveness, scoring=scoring, addH=addH, ncpu=1, lock=lock),
+                                                        receptor_pdbqt_fname=receptor_pdbqt_fname, protein_setup=protein_setup,
+                                                        seed=seed, exhaustiveness=exhaustiveness, scoring=scoring, addH=addH,
+                                                        cnn_scoring=cnn_scoring, cnn=cnn, ncpu=1, lock=lock),
                                                 smiles_dict.items()), 1):
             if i % 100 == 0:
                 sys.stderr.write(f'\r{i} molecules were docked')
@@ -209,9 +210,14 @@ def main():
     parser.add_argument('--install_dir', metavar='DIRNAME', type=filepath_type, required=True,
                         help='path to the dir with installed GNINA.')
     parser.add_argument('--scoring', metavar='STRING', required=True,
+                        choices=['ad4_scoring', 'default', 'dkoes_fast', 'dkoes_scoring', 'dkoes_scoring_old', 'vina', 'vinardo'],
                         help='type of scoring function.')
     parser.add_argument('--addH', action='store_true', default=False,
                         help='add hydrogens in ligands.')
+    parser.add_argument('--cnn_scoring', metavar='STRING', required=False, default='rescore', choices=['None', 'rescore', 'refinement', 'all'],
+                        help='type of CNN scoring.')
+    parser.add_argument('--cnn', metavar='STRING', required=False, default='dense_ensemble', choices=['crossdock_default2018_ensemble', 'dense_ensemble'],
+                        help='type of built-in model to use.')
 
 
     args = parser.parse_args()
@@ -246,7 +252,7 @@ def main():
 
     iter_docking(script_file=gnina_script_dir, tmpdir=tmpdir, dbname=args.output, receptor_pdbqt_fname=protein.name, protein_setup=setup.name,
                  protonation=protonation, exhaustiveness=args.exhaustiveness, seed=args.seed, scoring=args.scoring, addH=args.addH,
-                 ncpu=args.ncpu, use_dask=args.hostfile is not None)
+                 cnn_scoring=args.cnn_scoring, cnn=args.cnn, ncpu=args.ncpu, use_dask=args.hostfile is not None)
 
     if args.sdf:
         save_sdf(args.output)

@@ -73,9 +73,10 @@ def calc(smi, name):
             n_unique_hba_hbd_atoms = count_hbd_hba_atoms(m)
             max_ring_size = len(max(m.GetRingInfo().AtomRings(), key=len, default=()))
             n_chiral_centers = len(FindMolChiralCenters(m, includeUnassigned=True))
+            fcsp3_bm = rdMolDescriptors.CalcFractionCSP3(GetScaffoldForMol(m))
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
                    round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused, n_unique_hba_hbd_atoms, \
-                   max_ring_size, n_chiral_centers
+                   max_ring_size, n_chiral_centers, fcsp3_bm
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
@@ -141,7 +142,7 @@ def main():
     with open(out_fname, 'wt') as f:
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
                            'fmf', 'QED', 'HAC', 'NumRingsFused', 'unique_HBAD', 'max_ring_size',
-                           'ChiralCenters']) + '\n')
+                           'ChiralCenters', 'FCsp3_BM']) + '\n')
         for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')

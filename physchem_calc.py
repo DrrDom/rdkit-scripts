@@ -117,7 +117,8 @@ def main():
                                                  'NumRingsFused: number of rings considering fused and spirocycles as a single ring\n'
                                                  'unique_HBAD: number of unique H-bond acceptors and H-bond donors atoms\n'
                                                  'max_ring_size: maximum ring size in a molecule\n'
-                                                 'ChiralCenters: number of chiral centers (assigned and unassigned)\n',
+                                                 'ChiralCenters: number of chiral centers (assigned and unassigned)\n'
+                                                 'FCsp3_BM: fraction of sp3 carbons for Bemis-Murcko scaffold\n',
                                      formatter_class=RawTextHelpFormatter)
     parser.add_argument('-i', '--in', metavar='input.smi', required=True,
                         help='input SMILES file. Should contain mol title as a second field.'

@@ -76,7 +76,7 @@ def calc(smi, name):
             fcsp3_bm = rdMolDescriptors.CalcFractionCSP3(GetScaffoldForMol(m))
             return name, hba, hbd, hba + hbd, nrings, rtb, round(psa, 2), round(logp, 2), round(mr, 2), round(mw, 2), \
                    round(csp3, 3), round(fmf, 3), round(qed, 3), hac, nrings_fused, n_unique_hba_hbd_atoms, \
-                   max_ring_size, n_chiral_centers, fcsp3_bm
+                   max_ring_size, n_chiral_centers, round(fcsp3_bm, 3)
         except:
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None

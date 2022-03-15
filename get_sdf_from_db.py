@@ -33,9 +33,14 @@ def main():
     conn = sqlite3.connect(args.input)
     cur = conn.cursor()
     if args.no_fields:
-        sql = "SELECT mol_block FROM mols WHERE mol_block IS NOT NULL"
+        # sql = "SELECT mol_block FROM mols WHERE mol_block IS NOT NULL"
+        sql = "SELECT mol_block FROM mols WHERE mol_block IS NOT NULL AND " \
+              "id NOT IN (SELECT id FROM tautomers WHERE mol_block is NOT NULL)" \
+              "UNION SELECT mol_block FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
     else:
-        sql = "SELECT mol_block, docking_score FROM mols WHERE mol_block IS NOT NULL"
+        sql = "SELECT mol_block, docking_score FROM mols WHERE mol_block IS NOT NULL AND " \
+              "id NOT IN (SELECT id FROM tautomers WHERE mol_block is NOT NULL)" \
+              "UNION SELECT mol_block, docking_score FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
     if ids is not None:
         sql += f" AND id IN ({','.join(['?'] * len(ids))})"
     if args.first_entry:

@@ -6,12 +6,12 @@ import sqlite3
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extract mol blocks of specified mol ids into SDF file and extract '
-                                                 'their docking scores.')
+    parser = argparse.ArgumentParser(description='Extract mol blocks of specified mol ids and additional fields into '
+                                                 'SDF. Also it is possible to extract SMILES file.')
     parser.add_argument('-i', '--input', metavar='input.db', required=True, type=str,
                         help='SQLite DB, which is output of vina_dock script.')
     parser.add_argument('-o', '--output', metavar='output.sdf', required=True, type=str,
-                        help='output SDF file.')
+                        help='output SDF file (with mol blocks) or SMILES. Output format is guessed from extension.')
     parser.add_argument('-d', '--ids', metavar='mol_ids', required=False, type=str, default=None,
                         help='comma separated list of mol ids in DB or a text file with mol ids on individual lines. '
                              'If omitted all records in DB will be saved to SDF.')
@@ -42,10 +42,18 @@ def main():
     except sqlite3.Error:
         tautomers_exist = False
 
-    if args.fields:
-        sql = f"SELECT mol_block, {','.join(args.fields)} FROM mols WHERE mol_block IS NOT NULL"
+    ext = args.output.rsplit('.', 1)[1].lower()
+    if ext == 'sdf':
+        main_field = 'mol_block'
+    elif ext == 'smi':
+        main_field = 'smi'
     else:
-        sql = "SELECT mol_block FROM mols WHERE mol_block IS NOT NULL"
+        raise ValueError('Wrong extension of output file. Only SDF and SMI are allowed.')
+
+    if args.fields:
+        sql = f"SELECT {main_field}, {','.join(args.fields)} FROM mols WHERE mol_block IS NOT NULL"
+    else:
+        sql = f"SELECT {main_field} FROM mols WHERE mol_block IS NOT NULL"
     if args.ids:
         sql += f" AND id IN ({','.join('?' * len(ids))})"
     if args.add_sql:  # for example: iteration > 0
@@ -56,9 +64,9 @@ def main():
     if tautomers_exist:
         sql += " UNION "
         if args.fields:
-            sql += f" SELECT mol_block, {','.join(args.fields)} FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
+            sql += f" SELECT {main_field}, {','.join(args.fields)} FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
         else:
-            sql += " SELECT mol_block FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
+            sql += f" SELECT {main_field} FROM tautomers WHERE mol_block is NOT NULL AND duplicate IS NULL"
         if args.ids:
             sql += f" AND id IN ({','.join('?' * len(ids))})"
 
@@ -72,12 +80,15 @@ def main():
 
     with open(args.output, 'wt')as f:
         for item in res:  # (id, mol_block, ...)
-            mol_block = item[0]
-            f.write(mol_block)
-            for prop_name, prop_value in zip(args.fields, item[1:]):
-                f.write(f'>  <{prop_name}>\n')
-                f.write(f'{str(prop_value)}\n\n')
-            f.write('$$$$\n')
+            if ext == 'sdf':
+                mol_block = item[0]
+                f.write(mol_block)
+                for prop_name, prop_value in zip(args.fields, item[1:]):
+                    f.write(f'>  <{prop_name}>\n')
+                    f.write(f'{str(prop_value)}\n\n')
+                f.write('$$$$\n')
+            elif ext == 'smi':
+                f.write('\t'.join(map(str, item)) + '\n')
 
 
 if __name__ == '__main__':

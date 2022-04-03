@@ -48,7 +48,7 @@ def main():
                              'If omitted STDIN will be read as SDF format.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True,
                         help='output file in SMILES format.')
-    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1,
+    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1, type=int,
                         help='Number of CPU cores to use. Default: 1.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='print progress to STDERR.')

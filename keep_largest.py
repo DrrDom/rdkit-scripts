@@ -3,25 +3,39 @@
 __author__ = 'Pavel Polishchuk'
 
 import argparse
+import sys
+from multiprocessing import Pool
 from rdkit import Chem
 from read_input import read_input
 
 
-def main_params(in_fname, out_fname):
+def get_largest(mol, mol_name):
+    max_hac = 0
+    output_frag = None
+    if mol is not None:
+        frags = Chem.GetMolFrags(mol, asMols=True)
+        for frag in frags:
+            if frag.GetNumHeavyAtoms() > max_hac:
+                output_frag = frag
+    return output_frag, mol_name
+
+
+def get_largest_mp(items):
+    return get_largest(*items)
+
+
+def main_params(in_fname, out_fname, ncpu, verbose):
+
+    pool = Pool(ncpu)
 
     with open(out_fname, 'wt') as fo:
-
-        for mol, mol_name in read_input(in_fname, sanitize=True):
-
-            if mol is not None:
-
-                frags = Chem.GetMolFrags(mol, asMols=True)
-                max_hac = 0
-                output_frag = None
-                for frag in frags:
-                    if frag.GetNumHeavyAtoms() > max_hac:
-                        output_frag = frag
-                fo.write(f'{Chem.MolToSmiles(output_frag, isomericSmiles=True)}\t{mol_name}\n')
+        for i, (mol, mol_name) in enumerate(pool.imap(get_largest_mp, read_input(in_fname, sanitize=True)), 1):
+            if mol:
+                fo.write(f'{Chem.MolToSmiles(mol, isomericSmiles=True)}\t{mol_name}\n')
+            if verbose and i % 1000 == 0:
+                sys.stderr.write(f'\r{i} records were processed')
+    if verbose:
+        sys.stderr.write('\n')
 
 
 def main():
@@ -34,13 +48,17 @@ def main():
                              'If omitted STDIN will be read as SDF format.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True,
                         help='output file in SMILES format.')
+    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1,
+                        help='Number of CPU cores to use. Default: 1.')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help='print progress to STDERR.')
 
     args = parser.parse_args()
 
     if args.input == "/dev/stdin":
         args.input = None
 
-    main_params(args.input, args.output)
+    main_params(args.input, args.output, args.ncpu, args.verbose)
 
 
 if __name__ == '__main__':

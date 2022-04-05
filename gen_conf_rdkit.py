@@ -14,17 +14,17 @@ from multiprocessing import Pool, cpu_count
 from read_input import read_input
 
 
-def prep_input(fname, id_field_name, nconf, energy, rms, seed):
+def prep_input(fname, id_field_name, nconf, energy, rms, remove_h, seed):
     input_format = 'smi' if fname is None else None
     for mol, mol_name in read_input(fname, input_format=input_format, id_field_name=id_field_name):
-        yield mol, mol_name, nconf, energy, rms, seed
+        yield mol, mol_name, nconf, energy, rms, remove_h, seed
 
 
 def map_gen_conf(args):
     return gen_confs(*args)
 
 
-def remove_confs(mol, energy, rms):
+def remove_confs(mol, energy, rms, remove_h):
 
     if energy is None and rms is None:
         return
@@ -53,6 +53,9 @@ def remove_confs(mol, energy, rms):
     else:
         keep_ids = [c.GetId() for c in mol.GetConformers()]
 
+    if remove_h:
+        mol = Chem.RemoveHs(mol)
+
     if rms is not None:
         rms_list = [(i1, i2, AllChem.GetConformerRMS(mol, i1, i2)) for i1, i2 in combinations(keep_ids, 2)]
         while any(item[2] < rms for item in rms_list):
@@ -78,18 +81,20 @@ def remove_confs(mol, energy, rms):
     en = [en for i, en in e if i not in set(remove_ids)]
     mol.SetProp('energy', ';'.join(f'{i} {v:.2f}' for i, v in enumerate(en, 1)))
 
+    return mol
 
-def gen_confs(mol, mol_name, nconf, energy, rms, seed):
+
+def gen_confs(mol, mol_name, nconf, energy, rms, remove_h, seed):
     mol = Chem.AddHs(mol)
     mol.SetProp("_Name", mol_name)
     cids = AllChem.EmbedMultipleConfs(mol, numConfs=nconf, maxAttempts=nconf*4, randomSeed=seed)
     for cid in cids:
         AllChem.MMFFOptimizeMolecule(mol, confId=cid)
-    remove_confs(mol, energy, rms)
+    mol = remove_confs(mol, energy, rms, remove_h)
     return mol_name, mol
 
 
-def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, seed, verbose):
+def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, remove_h, ncpu, seed, verbose):
 
     Chem.SetDefaultPickleProperties(Chem.PropertyPickleOptions.AllProps)
 
@@ -115,7 +120,7 @@ def main_params(in_fname, out_fname, id_field_name, nconf, energy, rms, ncpu, se
     p = Pool(nprocess)
 
     try:
-        for i, (mol_name, mol) in enumerate(p.imap_unordered(map_gen_conf, prep_input(in_fname, id_field_name, nconf, energy, rms, seed), chunksize=10), 1):
+        for i, (mol_name, mol) in enumerate(p.imap_unordered(map_gen_conf, prep_input(in_fname, id_field_name, nconf, energy, rms, remove_h, seed), chunksize=10), 1):
             if mol:
                 if output_file_type == 'pkl':
                     pickle.dump((mol, mol_name), writer, -1)
@@ -171,6 +176,9 @@ def main():
     parser.add_argument('-r', '--rms', metavar='rms_threshold', default=None,
                         help='only conformers with RMS higher then threshold will be kept. '
                              'Default: None (keep all conformers).')
+    parser.add_argument('-x', '--remove_h', action='store_true', default=False,
+                        help='remove hydrogen atoms after generation of conformers and energy calculation (if it was '
+                             'requested) but before calculation of rms and save to file.')
     parser.add_argument('-s', '--seed', metavar='random_seed', default=-1,
                         help='integer to init random number generator. Default: -1 (means no seed).')
     parser.add_argument('-c', '--ncpu', metavar='cpu_number', default=1,
@@ -189,6 +197,7 @@ def main():
         if o == "seed": seed = int(v)
         if o == "rms": rms = float(v) if v is not None else None
         if o == "verbose": verbose = v
+        if o == "remove_h": remove_h = v
 
     main_params(in_fname=in_fname,
                 out_fname=out_fname,
@@ -196,6 +205,7 @@ def main():
                 nconf=nconf,
                 energy=energy,
                 rms=rms,
+                remove_h=remove_h,
                 ncpu=ncpu,
                 seed=seed,
                 verbose=verbose)

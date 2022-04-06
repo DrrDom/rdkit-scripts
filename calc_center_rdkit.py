@@ -3,6 +3,7 @@
 __author__ = 'Pavel Polishchuk'
 
 
+import rdkit
 from rdkit import Chem
 import argparse
 import sys
@@ -69,6 +70,8 @@ def main_params(input_fnames, output_fname):
             f = Chem.MolFromMol2File
         elif fname[-6:].lower() == '.pdbqt':
             f = read_pdbqt
+        elif fname[-4:].lower() == '.sdf':
+            f = Chem.SDMolSupplier
         else:
             continue
 
@@ -81,6 +84,12 @@ def main_params(input_fnames, output_fname):
                     center = calc_center(get_coord(item))
                     if center is not None:
                         print(fname + '\t' + '\t'.join(map(str, center)))
+
+            elif isinstance(m, rdkit.Chem.rdmolfiles.SDMolSupplier):  # sdf
+                for item in m:
+                    center = calc_center(get_coord(item))
+                    if center is not None:
+                        print(fname + '\t' + item.GetProp('_Name') + '\t' + '\t'.join(map(str, center)))
 
             else:  # pdb/mol2
 
@@ -97,7 +106,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Calc center of all supplied coordinates in a file.')
     parser.add_argument('-i', '--input', metavar='input_molecule', required=True, nargs='*',
-                        help='input files (PDB/PDBQT/MOL2).')
+                        help='input files (PDB/PDBQT/MOL2/SDF).')
     parser.add_argument('-o', '--output', metavar='output.txt',
                         help='output text file. If omitted output will be in stdout.')
 

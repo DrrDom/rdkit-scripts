@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import traceback
 from functools import partial
 from multiprocessing import Pool, Manager, cpu_count
 
@@ -100,7 +101,12 @@ def mk_prepare_ligand_string(molecule_string, build_macrocycle=True, add_water=F
                                      hydrate=add_water, amide_rigid=amide_rigid)
                                      #additional parametrs
                                      #rigidify_bonds_smarts=[], rigidify_bonds_indices=[])
-    preparator.prepare(mol)
+    try:
+        preparator.prepare(mol)
+    except Exception:
+        sys.stderr.write('Warning. Incorrect mol object to convert to pdbqt. Continue. \n')
+        traceback.print_exc()
+        return None
     if verbose:
         preparator.show_setup()
 
@@ -130,10 +136,16 @@ def ligand_preparation(smi, seed=0):
         AllChem.UFFOptimizeMolecule(m, maxIters=100)
         return Chem.MolToMolBlock(m)
 
-    mol = Chem.MolFromSmiles(smi)
-    mol_conf_sdf = convert2mol(mol)
+    try:
+        mol = Chem.MolFromSmiles(smi)
+        mol_conf_sdf = convert2mol(mol)
+    except TypeError:
+        sys.stderr.write(f'incorrect SMILES {smi} for converting to molecule\n')
+        return None
+
     if mol_conf_sdf is None:
         return None
+
     mol_conf_pdbqt = mk_prepare_ligand_string(mol_conf_sdf,
                                               build_macrocycle=False,
                                               # can do it True, but there is some problem with >=7-chains mols

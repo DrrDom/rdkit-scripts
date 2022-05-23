@@ -10,6 +10,7 @@ from rdkit import Chem
 def calc(input_fname, output_fname, field_name, extract_fields, sep):
     with open(output_fname, "wt") as f:
         for m in Chem.SDMolSupplier(input_fname):
+            Chem.AssignStereochemistryFrom3D(m)
             if m:
                 smi = Chem.MolToSmiles(m, isomericSmiles=True)
                 if field_name:

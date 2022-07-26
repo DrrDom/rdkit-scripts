@@ -109,10 +109,10 @@ def __read_sdf_confs(fname, input_format, id_field_name=None, sanitize=True, sdf
         yield m, title
 
 
-def __read_smiles(fname, sanitize=True):
+def __read_smiles(fname, sanitize=True, sep='\t'):
     with open(fname) as f:
         for line in f:
-            tmp = line.strip().split()
+            tmp = line.strip().split(sep)
             mol = Chem.MolFromSmiles(tmp[0], sanitize=sanitize)
             if mol is not None:
                 if len(tmp) > 1:
@@ -123,10 +123,10 @@ def __read_smiles(fname, sanitize=True):
                 yield mol, mol_title
 
 
-def __read_stdin_smiles(sanitize=True):
+def __read_stdin_smiles(sanitize=True, sep='\t'):
     line = sys.stdin.readline()
     while line:
-        tmp = line.strip().split()
+        tmp = line.strip().split(sep)
         if tmp:
             mol = Chem.MolFromSmiles(tmp[0], sanitize=sanitize)
             if mol is not None:
@@ -173,12 +173,13 @@ def __read_stdin_sdf(sanitize=True):
 #         yield mol, mol_name
 
 
-def read_input(fname, input_format=None, id_field_name=None, sanitize=True, sdf_confs=False):
+def read_input(fname, input_format=None, id_field_name=None, sanitize=True, sdf_confs=False, sep='\t'):
     """
     fname - is a file name, None if STDIN
     input_format - is a format of input data, cannot be None for STDIN
     id_field_name - name of the field containing molecule name, if None molecule title will be taken
     sdf_confs - return consecutive molecules with the same name as a single Mol object with multiple conformers
+    sep - separator in SMILES format
     """
     if input_format is None:
         tmp = os.path.basename(fname).split('.')
@@ -191,13 +192,13 @@ def read_input(fname, input_format=None, id_field_name=None, sanitize=True, sdf_
         if input_format == 'sdf':
             suppl = __read_stdin_sdf(sanitize=sanitize)
         elif input_format == 'smi':
-            suppl = __read_stdin_smiles(sanitize=sanitize)
+            suppl = __read_stdin_smiles(sanitize=sanitize, sep=sep)
         else:
             raise Exception("Input STDIN format '%s' is not supported. It can be only sdf, smi." % input_format)
     elif input_format in ("sdf", "sdf.gz"):
         suppl = __read_sdf_confs(os.path.abspath(fname), input_format, id_field_name, sanitize, sdf_confs)
     elif input_format in ('smi'):
-        suppl = __read_smiles(os.path.abspath(fname), sanitize)
+        suppl = __read_smiles(os.path.abspath(fname), sanitize, sep=sep)
     elif input_format == 'pkl':
         suppl = __read_pkl(os.path.abspath(fname))
     else:

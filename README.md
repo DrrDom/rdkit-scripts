@@ -3,6 +3,8 @@
 
 The purpose of this repository is to collect useful scripts which mainly use RDKit. Contributions are welcome!
 
+Some scripts may require further dependencies.
+
 #### Comments and recommendations for contributors:
 1. There is a `read_input.py` script which contains the function `read_input`. It reads molecules from SMI, SDF, SDF.GZ and PKL (pickled molecules as tuples of mol and mol_title) files and STDIN (SMI and SDF formats are supported) and it returns tuples of (mol, mol_title). This is a generator and can be applied to process large collections of molecules. I advise to use this function if you do not need other data from input files.
 2. There is `_template.py` file which can be used as a template for new scripts. Please do not change names for input, output, ncpu and verbose arguments. This will help to make command line arguments consistent across scripts.

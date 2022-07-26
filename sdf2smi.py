@@ -41,7 +41,6 @@ def main():
     parser.add_argument('-s', '--sep', metavar='SEPARATOR', default='\t',
                         help='separator in output file. Default: tab.')
 
-
     args = vars(parser.parse_args())
     for o, v in args.items():
         if o == "input": input_fname = v

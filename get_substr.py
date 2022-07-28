@@ -12,17 +12,20 @@ import sys
 import argparse
 from rdkit import Chem
 from read_input import read_input
+from functools import partial
 from multiprocessing import Pool, cpu_count
 
 
-def match(args):
-    # args - mol and mol_title
-    mol, mol_title = args
-    res = [mol.HasSubstructMatch(pat) for pat in patt]
-    if (not neg and any(res)) or (neg and not any(res)):
+def match(mol, mol_title, patterns, negate):
+    res = [mol.HasSubstructMatch(pat) for pat in patterns]
+    if (not negate and any(res)) or (negate and not any(res)):
         return True, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
     else:
         return False, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
+
+
+def match_mp(args, patterns, negate):
+    return match(*args, patterns, negate)
 
 
 def main():
@@ -62,7 +65,7 @@ def main():
         with open(out_fname, 'wt') as f:
             match_counter = 0
             for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
-                res = match((mol, mol_title))
+                res = match(mol, mol_title, patt, neg)
                 if res[0]:
                     f.write('%s\t%s\n' % res[1:])
                     f.flush()
@@ -75,7 +78,8 @@ def main():
         pool = Pool(max(1, min(ncpu, cpu_count())))
         with open(out_fname, 'wt') as f:
             match_counter = 0
-            for i, res in enumerate(pool.imap(match, read_input(in_fname, id_field_name=field_name)), 1):
+            for i, res in enumerate(pool.imap(partial(match_mp, patterns=patt, negate=neg),
+                                              read_input(in_fname, id_field_name=field_name)), 1):
                 if res[0]:
                     f.write('%s\t%s\n' % res[1:])
                     f.flush()

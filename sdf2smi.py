@@ -9,6 +9,8 @@ from rdkit import Chem
 
 def calc(input_fname, output_fname, field_name, extract_fields, sep):
     with open(output_fname, "wt") as f:
+        if extract_fields is not None:
+            f.write('smi\tid\t' + '\t'.join(extract_fields) + '\n')
         for m in Chem.SDMolSupplier(input_fname):
             if m.GetConformer().Is3D():
                 Chem.AssignStereochemistryFrom3D(m)

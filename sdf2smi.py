@@ -12,9 +12,9 @@ def calc(input_fname, output_fname, field_name, extract_fields, sep):
         if extract_fields is not None:
             f.write('smi\tid\t' + '\t'.join(extract_fields) + '\n')
         for m in Chem.SDMolSupplier(input_fname):
-            if m.GetConformer().Is3D():
-                Chem.AssignStereochemistryFrom3D(m)
             if m:
+                if m.GetConformer().Is3D():
+                    Chem.AssignStereochemistryFrom3D(m)
                 smi = Chem.MolToSmiles(m, isomericSmiles=True)
                 if field_name:
                     n = m.GetProp(field_name)

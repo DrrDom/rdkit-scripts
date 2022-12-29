@@ -28,11 +28,11 @@ def rmsd(mol, ref, chirality):
     def rmsd_calc(r_coord, m_coord):
         s = 0
         for r, m in zip(r_coord, m_coord):
-            s += ((r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2) ** 0.5
-        s = s / len(r_coord)
+            s += (r[0] - m[0]) ** 2 + (r[1] - m[1]) ** 2 + (r[2] - m[2]) ** 2
+        s = (s / len(r_coord)) ** 0.5
         return s
 
-    match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=chirality)
+    match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=chirality, maxMatches=10000)
     min_rmsd = float('inf')
     if not match_indices:
         mcs = rdFMCS.FindMCS([mol, ref], threshold=1.0,

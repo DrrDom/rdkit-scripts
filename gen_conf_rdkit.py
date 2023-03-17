@@ -27,7 +27,7 @@ def map_gen_conf(args):
 def remove_confs(mol, energy, rms, remove_h):
 
     if energy is None and rms is None:
-        return
+        return mol
 
     e = []
     for conf in mol.GetConformers():

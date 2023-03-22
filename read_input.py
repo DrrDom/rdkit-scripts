@@ -18,7 +18,7 @@ def read_pdbqt(fname, smi, sanitize=True, removeHs=False):
     recognized as a single structure (list with a single molecule will be returned)
 
     :param fname: pdbqt file
-    :param smi: SMILES of the molecule in pdbqt file to assing bond orders
+    :param smi: SMILES of the molecule in pdbqt file to assign bond orders
     :param sanitize:
     :param removeHs:
     :return: list of molecules
@@ -73,9 +73,9 @@ def __read_pkl(fname):
 
 def __read_sdf(fname, input_format, id_field_name=None, sanitize=True):
     if input_format == 'sdf':
-        suppl = Chem.SDMolSupplier(fname, sanitize=sanitize)
+        suppl = Chem.SDMolSupplier(fname, sanitize=sanitize, removeHs=False)
     elif input_format == 'sdf.gz':
-        suppl = Chem.ForwardSDMolSupplier(gzip.open(fname), sanitize=sanitize)
+        suppl = Chem.ForwardSDMolSupplier(gzip.open(fname), sanitize=sanitize, removeHs=False)
     else:
         return
     for mol in suppl:
@@ -144,7 +144,7 @@ def __read_stdin_sdf(sanitize=True):
     while line:
         molblock += line
         if line == '$$$$\n':
-            mol = [x for x in Chem.ForwardSDMolSupplier(BytesIO(molblock.encode('utf-8')), sanitize=sanitize)][0]
+            mol = [x for x in Chem.ForwardSDMolSupplier(BytesIO(molblock.encode('utf-8')), sanitize=sanitize, removeHs=False)][0]
             mol_title = molblock.split('\n', 1)[0]
             if not mol_title:
                 mol_title = __get_smi_as_molname(mol)

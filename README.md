@@ -60,11 +60,15 @@ Some scripts may require further dependencies.
   
 `gen_stereo_rdkit` - enumerate stereoisomers (tetrahedral and double bond).  
   
+`get_mol_center.py` - returns a geometrical center of a molecule
+  
 `get_substr` - filter input molecules by SMARTS, multiple SMARTS are allowed, negative matching is possible.  
   
 `get_total_charge` - calculate total formal charge of input MOL files.  
   
 `keep_largest` - keep the largest fragment by the number of heavy atoms in each compound record. If components have the same number a random one will be selected.  
+  
+`mirror_mols.py` - return mirrored 3D input structure and optionally rename it. Useful for generation of enantiomers of molecules with axial/planar chirality.
   
 `murcko` - return Murcko scaffolds ignoring stereoconfiguration.  
   

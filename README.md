@@ -50,6 +50,8 @@ Some scripts may require further dependencies.
 
 ##### Manipulate with Mol objects (calc properties, generate conformers/stereoisomers, filter compounds, etc):  
 
+`add_h` - hydrogenize input files in-place  
+  
 `calc_center_rdkit` - calculate the center of coordinates of all atoms in a molecule(s).  
   
 `count_undefined_stereocenters` - return to STDOUT names and the number of undefined stereocenters in input molecules.  

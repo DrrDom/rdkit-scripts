@@ -42,6 +42,8 @@ Some scripts may require further dependencies.
   
 `sdf2pkl` - convert SDF to multi-conformer PKL file. Conformers are recognized by mol title and should go sequentially in input SDF.  
   
+`smi2sdf` - Convert SMILES to SDF including additional fields if they are named and exist in SMILES file  
+  
 `split_pdb` - split PDB by chains and save to separate PDB files.  
 
 ##### Manipulate with Mol objects (calc properties, generate conformers/stereoisomers, filter compounds, etc):  

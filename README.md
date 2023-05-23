@@ -95,6 +95,6 @@ Some scripts may require further dependencies.
 `binning` - take a table with variable values and return a table with binned values according to supplied thresholds.  
 
 ##### Removed scripts
-`vina_dock` has been removed because there is a separate repository for automatic docking which includes docking with Vina, smina and gnina - https://github.com/ci-lab-cz/docking-scripts.
+`vina_dock` has been removed because there is a separate repository for automatic and distributed docking which includes docking with Vina, smina and gnina - https://github.com/ci-lab-cz/easydock.
 
 ##### Happy RDKiiting! :)

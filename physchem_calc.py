@@ -140,7 +140,7 @@ def main():
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')
             if verbose and i % 100 == 0:
-                sys.stderr.write('\r%i molecules passed' % (i + 1))
+                sys.stderr.write('\r%i molecules passed' % i)
                 sys.stderr.flush()
 
 

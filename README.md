@@ -24,11 +24,11 @@ Some scripts may require further dependencies.
   
 `remove_dupl_by_field` - remove entries from SDF file having duplicated mol title or field value.  
   
+`rename_mols` - identify identical entries in SDF (conformers) and rename them in identical manner. 
+
 `sdf_field2title` - insert values of a given SDF field into molecular title.  
   
 `strip_blank_lines` - remove empty lines in multi-line field values in input SDF.  
-
-`rename_mols` - identify identical entries in SDF (conformers) and rename them in identical manner. 
   
 ##### Format and file (inter)conversion:  
 
@@ -89,6 +89,8 @@ Some scripts may require further dependencies.
 `rmsd_rdkit` - calculate RMSD for input MOL2/PDBQT/SDF files. Automatically calculate RMSD for maximum common substructure if full atom matching was failed. Symmetry checking was implemented.  
   
 `sanitize_rdkit` - remove compounds with RDKit sanitization errors and add to output molecules the number of double bonds, unspecified stereocenters and total charge.  
+
+`sphere_exclusion` - return names of a diverse subset of input compounds  
   
 `test_pains` - return a list of SMILES matched PAINS.  
 

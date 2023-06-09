@@ -27,6 +27,8 @@ Some scripts may require further dependencies.
 `sdf_field2title` - insert values of a given SDF field into molecular title.  
   
 `strip_blank_lines` - remove empty lines in multi-line field values in input SDF.  
+
+`rename_mols` - identify identical entries in SDF (conformers) and rename them in identical manner. 
   
 ##### Format and file (inter)conversion:  
 

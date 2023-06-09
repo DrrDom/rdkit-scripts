@@ -11,6 +11,8 @@ from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
 from multiprocessing import Pool, cpu_count
 from itertools import combinations
 
+from read_input import read_input
+
 
 HDonorSmarts = Chem.MolFromSmarts('[$([N;!H0;v3]),$([N;!H0;+1;v4]),$([O,S;H1;+0]),$([n;H1;+0])]')
 HAcceptorSmarts = Chem.MolFromSmarts('[$([O,S;H1;v2]-[!$(*=[O,N,P,S])]),' +
@@ -50,8 +52,7 @@ def count_hbd_hba_atoms(m):
     return len(set(HDonor + HAcceptor))
 
 
-def calc(smi, name):
-    m = Chem.MolFromSmiles(smi)
+def calc(m, name):
     if m is not None:
         try:
             hba = rdMolDescriptors.CalcNumHBA(m)
@@ -82,22 +83,11 @@ def calc(smi, name):
             sys.stderr.write(f'molecule {name} was omitted due to an error in calculation of some descriptors\n')
             return None
     else:
-        sys.stderr.write('smiles %s cannot be parsed (%s)' % (smi, name))
         return None
 
 
 def calc_mp(items):
     return calc(*items)
-
-
-def read_smi(fname, sep="\t"):
-    with open(fname) as f:
-        for line in f:
-            items = line.strip().split(sep)
-            if len(items) == 1:
-                yield items[0], items[0]
-            else:
-                yield items[0], items[1]
 
 
 def main():
@@ -146,7 +136,7 @@ def main():
         f.write('\t'.join(['Name', 'HBA', 'HBD', 'complexity', 'NumRings', 'RTB', 'TPSA', 'logP', 'MR', 'MW', 'Csp3',
                            'fmf', 'QED', 'HAC', 'NumRingsFused', 'unique_HBAD', 'max_ring_size',
                            'ChiralCenters', 'ChiralCentersUndefined', 'FCsp3_BM']) + '\n')
-        for i, res in enumerate(p.imap(calc_mp, read_smi(in_fname), chunksize=100)):
+        for i, res in enumerate(p.imap(calc_mp, read_input(in_fname), chunksize=100), 1):
             if res:
                 f.write('\t'.join(map(str, res)) + '\n')
             if verbose and i % 100 == 0:

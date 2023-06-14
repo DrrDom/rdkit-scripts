@@ -56,7 +56,6 @@ def calc(m, name):
     if m is not None:
         try:
             hba = rdMolDescriptors.CalcNumHBA(m)
-
             hbd = rdMolDescriptors.CalcNumHBD(m)
             nrings = rdMolDescriptors.CalcNumRings(m)
             rtb = rdMolDescriptors.CalcNumRotatableBonds(m)

@@ -65,7 +65,8 @@ def rename_molecules(input_fname, output_fname, names_fname, prefix):
 def main():
     parser = argparse.ArgumentParser(description='Identify identical structures (conformers) in an SDF file and '
                                                  'rename them identically in the same manner prefix + 8 sequential '
-                                                 'digits.')
+                                                 'digits. atoms in conformers will be reordered in a consistent manner '
+                                                 'across all conformers of the same molecule.')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, type=str,
                         help='input SDF.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True, type=str,

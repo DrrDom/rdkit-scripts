@@ -21,6 +21,8 @@ Some scripts may require further dependencies.
 `extractsdf` - extract molecule names and field values from input SDF.  
   
 `extract_mol_by_name` - extract molecules by name (partial name matching) to new SDF file   
+
+`insert_sdf` - add data from a text file as additional fields to input SDF file  
   
 `remove_dupl_by_field` - remove entries from SDF file having duplicated mol title or field value.  
   

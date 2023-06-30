@@ -16,11 +16,11 @@ from rdkit import Chem
 
 
 def calc(items):
+    mol, mol_name = items
     # items is a tuple (mol, mol_name)
-    if items[0].GetConformer().Is3D():
-        Chem.AssignStereochemistryFrom3D(items[0])
-    smi = Chem.MolToSmiles(items[0], isomericSmiles=True)
-    return smi, items[1]
+    Chem.AssignStereochemistryFrom3D(mol)
+    smi = Chem.MolToSmiles(mol, isomericSmiles=True)
+    return smi, mol_name
 
 
 def main():

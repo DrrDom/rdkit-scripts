@@ -37,7 +37,6 @@ def main():
             if mol:
                 if len(tmp) > 1:
                     mol.SetProp('_Name', tmp[1])
-                    mol.SetProp(headers[0], tmp[1])
                 w.write(mol)
         for line in fin:
             tmp = line.strip().split(args.sep)

@@ -12,7 +12,7 @@ import re
 import argparse
 from itertools import chain
 
-patt = re.compile('> {1,2}<(.*)>( +\([0-9]+\))?')
+patt = re.compile('> {1,2}<(.*)>( +\(.+\))?')
 
 
 def get_fields(molstr):

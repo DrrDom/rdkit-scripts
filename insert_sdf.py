@@ -23,11 +23,12 @@ def process_file(input_fname, field_name, data_fname, output_fname, omit_missing
             prop_names = set(mol.GetPropNames())
             if omit_missing and mol_name not in d.index:
                 continue
-            for col_name in d.loc[mol_name].index:
-                if d.loc[mol_name][col_name] is not np.nan:
-                    if col_name in prop_names:
-                        sys.stderr.write(f'Property {col_name} for molecule {mol_name} was overwritten\n')
-                    mol.SetProp(col_name, d.loc[mol_name][col_name])
+            if mol_name in d.index:
+                for col_name in d.loc[mol_name].index:
+                    if d.loc[mol_name][col_name] is not np.nan:
+                        if col_name in prop_names:
+                            sys.stderr.write(f'Property {col_name} for molecule {mol_name} was overwritten\n')
+                        mol.SetProp(col_name, d.loc[mol_name][col_name])
             w.write(mol)
     finally:
         w.close()

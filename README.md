@@ -54,7 +54,7 @@ Some scripts may require further dependencies.
 
 ##### Manipulate with Mol objects (calc properties, generate conformers/stereoisomers, filter compounds, etc):  
 
-`add_h` - hydrogenize input files in-place  
+`add_h` - hydrogenize input files  
   
 `calc_center_rdkit` - calculate the center of coordinates of all atoms in a molecule(s).  
   

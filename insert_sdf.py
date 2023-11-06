@@ -45,7 +45,7 @@ def main():
                              'molecule titles will be used.')
     parser.add_argument('-d', '--datafile', metavar='FILENAME', required=True, type=str,
                         help='input tab-separate text file with a header. The first column is identifier of a molecule '
-                             '(molecule title)')
+                             '(molecule title). Some molecules can be missing, this will not cause errors.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True, type=str,
                         help='output SDF file where molecules listed in the input text file get additional data '
                              'fields.')

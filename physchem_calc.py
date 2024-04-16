@@ -58,7 +58,7 @@ def calc(m, name):
             hba = rdMolDescriptors.CalcNumHBA(m)
             hbd = rdMolDescriptors.CalcNumHBD(m)
             nrings = rdMolDescriptors.CalcNumRings(m)
-            rtb = rdMolDescriptors.CalcNumRotatableBonds(m)
+            rtb = rdMolDescriptors.CalcNumRotatableBonds(Chem.RemoveHs(m))
             psa = rdMolDescriptors.CalcTPSA(m)
             logp, mr = rdMolDescriptors.CalcCrippenDescriptors(m)
             mw = rdMolDescriptors._CalcMolWt(m)

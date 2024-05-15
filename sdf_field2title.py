@@ -23,7 +23,9 @@ def main_params(input_sdf_fname, field_name, output_sdf_fname, insert_smi):
             if field_name and m.HasProp(field_name):
                 m.SetProp('_Name', m.GetProp(field_name))
             elif insert_smi:
-                m.SetProp('_Name', Chem.MolToSmiles(m, isomericSmiles=True))
+                tmp = Chem.Mol(m)
+                Chem.SanitizeMol(tmp)
+                m.SetProp('_Name', Chem.MolToSmiles(tmp, isomericSmiles=True))
             else:
                 m.SetProp('_Name', 'MolID_%i' % i)
                 i += 1

@@ -28,7 +28,9 @@ Some scripts may require further dependencies.
   
 `rename_mols` - identify identical entries in SDF (conformers) and rename them in identical manner. 
 
-`sdf_field2title` - insert values of a given SDF field into molecular title, or use SMILES as titles or enumerate titles sequentially.  
+`sdf_field2title` - insert values of a given SDF field into molecular title, or use SMILES as titles or enumerate titles sequentially.
+
+`sdf_title2field` - insert molecular title into a given SDF field
   
 `strip_blank_lines` - remove empty lines in multi-line field values in input SDF.  
   

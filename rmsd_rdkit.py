@@ -68,6 +68,8 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
         ref = Chem.MolFromMol2File(ref_name, removeHs=True)
     elif ref_name.lower().endswith('.pdbqt'):
         ref = read_pdbqt(ref_name, refsmi, removeHs=True)[0]
+    elif ref_name.lower().endswith('.mol'):
+        ref = Chem.MolFromMolFile(ref_name, removeHs=True)
     elif ref_name.lower().endswith('.sdf'):
         ref = {m.GetProp('_Name'): m for m in Chem.SDMolSupplier(ref_name) if m}
     else:
@@ -147,7 +149,7 @@ def main():
                              'tab-separated. Molecule names should correspond to PDBQT file names. '
                              'DEVELOPERS, STOP USING PDB FORMAT FOR DOCKING PROGRAMS!')
     parser.add_argument('-r', '--reference', metavar='FILENAME', required=True,
-                        help='reference molecule (from X-ray complex structure) in MOL2/PDBQT format. '
+                        help='reference molecule (from X-ray complex structure) in MOL/MOL2/PDBQT/SDF format. '
                              'Multiple reference molecules can be supplied in SDF file, in this case molecules '
                              'will be matched by their names.')
     parser.add_argument('-s', '--refsmi', metavar='SMILES or FILENAME', required=False, default=None,

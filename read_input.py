@@ -53,6 +53,32 @@ def read_pdbqt(fname, smi, sanitize=True, removeHs=False):
     return mols
 
 
+def assign_mol_props_to_conf(mol, conf):
+    for k, v in mol.GetPropsAsDict().items():
+        if isinstance(v, int):
+            conf.SetIntProp(k, v)
+        elif isinstance(v, float):
+            conf.SetDoubleProp(k, v)
+        elif isinstance(v, bool):
+            conf.SetBoolProp(k, v)
+        else:
+            conf.SetProp(k, v)
+    return conf
+
+
+def assign_conf_props_to_mol(conf, mol):
+    for k, v in conf.GetPropsAsDict().items():
+        if isinstance(v, int):
+            mol.SetIntProp(k, v)
+        elif isinstance(v, float):
+            mol.SetDoubleProp(k, v)
+        elif isinstance(v, bool):
+            mol.SetBoolProp(k, v)
+        else:
+            mol.SetProp(k, v)
+    return mol
+
+
 def __get_smi_as_molname(mol):
     try:
         name = Chem.MolToSmiles(mol, isomericSmiles=True)
@@ -96,12 +122,15 @@ def __read_sdf_confs(fname, input_format, id_field_name=None, sanitize=True, sdf
         if sdf_confs:
             if title is None:
                 m = mol
+                conf = assign_mol_props_to_conf(m, m.GetConformer(0))
                 title = mol_title
             elif title == mol_title:
-                m.AddConformer(mol.GetConformer(0), assignId=True)
+                conf = assign_mol_props_to_conf(mol, mol.GetConformer(0))
+                m.AddConformer(conf, assignId=True)
             else:
                 yield m, title
                 m = mol
+                conf = assign_mol_props_to_conf(m, m.GetConformer(0))
                 title = mol_title
         else:
             yield mol, mol_title

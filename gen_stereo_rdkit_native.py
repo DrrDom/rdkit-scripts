@@ -35,11 +35,11 @@ def enum_stereoisomers(input_fname, output_fname, max_isomers, use_embedding, no
     pool = Pool(max(min(cpu_count(), ncpu), 1))
 
     with open(output_fname, 'wt') as f:
-        for i, items in enumerate(pool.imap(partial(enum_stereo,
-                                                    max_isomers=max_isomers,
-                                                    use_embedding=use_embedding,
-                                                    no_suffix=no_suffix),
-                                            read_input(input_fname)), 1):
+        for i, items in enumerate(pool.imap_unordered(partial(enum_stereo,
+                                                              max_isomers=max_isomers,
+                                                              use_embedding=use_embedding,
+                                                              no_suffix=no_suffix),
+                                                      read_input(input_fname)), 1):
             for smi, mol_name in items:
                 f.write(f'{smi}\t{mol_name}\n')
             if verbose and i % 100 == 0:

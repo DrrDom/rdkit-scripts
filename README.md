@@ -71,9 +71,11 @@ Some scripts may require further dependencies.
 `filter_conf_adv` - selection of representative conformers by RMS value using clustering and advanced features (e.g. preferable selection of specifically labeled conformers).  
 
 `gen_conf_rdkit` - generate conformers.  
-  
+ 
 `gen_stereo_rdkit` - enumerate stereoisomers (tetrahedral and double bond).  
-  
+ 
+`gen_stereo_rdkit_native` - enumerate stereoisomers (tetrahedral and double bond) using built-in RDKit function.  
+ 
 `get_mol_center` - returns a geometrical center of a molecule
   
 `get_substr` - filter input molecules by SMARTS, multiple SMARTS are allowed, negative matching is possible.  

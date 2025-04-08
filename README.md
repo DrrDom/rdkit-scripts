@@ -94,7 +94,7 @@ Some scripts may require further dependencies.
   
 `remove_dupl_rdkit` - remove duplicates by InChi keys comparison within the input file or relatively to a reference file.  
   
-`rmsd_rdkit` - calculate RMSD for input MOL2/PDBQT/SDF files. Automatically calculate RMSD for maximum common substructure if full atom matching was failed. Symmetry checking was implemented.  
+`rmsd_rdkit` - calculate RMSD for input MOL2/PDBQT/SDF files. Automatically calculate RMSD for maximum common substructure if full atom matching was failed. Symmetry checking was implemented. Can also pre-align molecules to calculate minimum RMSD (not suitable for docking poses).  
   
 `sanitize_rdkit` - remove compounds with RDKit sanitization errors and add to output molecules the number of double bonds, unspecified stereocenters and total charge.  
 

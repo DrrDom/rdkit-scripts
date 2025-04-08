@@ -7,8 +7,11 @@ import os
 import re
 import sys
 
+from itertools import product
+
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
+from rdkit.Chem.rdMolAlign import GetBestRMS
 
 from read_input import read_pdbqt, read_input
 
@@ -23,7 +26,7 @@ def get_coord(mol, indices=None):
     return tuple(output)
 
 
-def rmsd(mol, ref, chirality):
+def rmsd(mol, ref, chirality, align):
 
     def rmsd_calc(r_coord, m_coord):
         s = 0
@@ -43,26 +46,35 @@ def rmsd(mol, ref, chirality):
         patt = Chem.MolFromSmarts(mcs.smartsString)
         refMatch, molMatch = ref.GetSubstructMatches(patt, uniquify=False), \
                              mol.GetSubstructMatches(patt, uniquify=False)
+        if not align:
+            for ids_ref in refMatch:
+                for ids_mol in molMatch:
+                    ref_coord = get_coord(ref, ids_ref)
+                    mol_coord = get_coord(mol, ids_mol)
+                    s = rmsd_calc(ref_coord, mol_coord)
+                    if s < min_rmsd:
+                        min_rmsd = s
+        else:
+            map_ids = [list(zip(ids_mol, ids_ref)) for ids_mol, ids_ref in product(molMatch, refMatch)]
+            min_rmsd = GetBestRMS(mol, ref, map=map_ids)
 
-        for ids_ref in refMatch:
-            for ids_mol in molMatch:
-                ref_coord = get_coord(ref, ids_ref)
-                mol_coord = get_coord(mol, ids_mol)
+    else:
+        if not align:
+            ref_coord = get_coord(ref)
+            for ids in match_indices:
+                mol_coord = get_coord(mol, ids)
                 s = rmsd_calc(ref_coord, mol_coord)
                 if s < min_rmsd:
                     min_rmsd = s
-    else:
-        ref_coord = get_coord(ref)
-        for ids in match_indices:
-            mol_coord = get_coord(mol, ids)
-            s = rmsd_calc(ref_coord, mol_coord)
-            if s < min_rmsd:
-                min_rmsd = s
+        else:
+            ref_ids = list(range(ref.GetNumAtoms()))
+            map_ids = [list(zip(ids, ref_ids)) for ids in match_indices]
+            min_rmsd = GetBestRMS(mol, ref, map=map_ids)
 
     return round(min_rmsd, 3)
 
 
-def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex):
+def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex, align):
 
     if ref_name.lower().endswith('.mol2'):
         ref = Chem.MolFromMol2File(ref_name, removeHs=True)
@@ -131,7 +143,7 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
                     refmol = ref
 
                 if refmol is not None:
-                    mol_rmsd = rmsd(mol, refmol, chirality)
+                    mol_rmsd = rmsd(mol, refmol, chirality, align)
                     if mol_rmsd is not None:
                         print(f'{mol_name}\t{i}\t{mol_rmsd}')
                     else:
@@ -163,6 +175,9 @@ def main():
                              'Examples: MOLID[0-9]* or .*(?=_out.pdbqt)')
     parser.add_argument('-o', '--output', metavar='FILENAME',
                         help='output text file. If omitted output will be in stdout.')
+    parser.add_argument('-a', '--align', action='store_true', default=False,
+                        help='align molecules to calculate minimum RMSD. By default there is no alignment, that is '
+                             'suitable for assessing of docking outputs.')
     parser.add_argument('-x', '--nochirality', action='store_true', default=False,
                         help='choose this option if you want to omit matching chirality in substructure search. '
                              'By default chirality is considered.')
@@ -174,7 +189,7 @@ def main():
     else:
         refsmi = args.refsmi
 
-    main_params(args.input, args.input_smi, args.output, args.reference, refsmi, not args.nochirality, args.regex)
+    main_params(args.input, args.input_smi, args.output, args.reference, refsmi, not args.nochirality, args.regex, args.align)
 
 
 if __name__ == '__main__':

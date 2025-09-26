@@ -4,6 +4,7 @@ __author__ = 'Pavel Polishchuk'
 
 
 import argparse
+import glob
 from rdkit import Chem
 
 
@@ -15,19 +16,20 @@ def main():
 
     args = parser.parse_args()
 
-    for fname in args.input:
+    for path in args.input:
+        for fname in glob.glob(path):
 
-        if fname.endswith('.mol'):
-            mol = Chem.MolFromMolFile(fname, removeHs=False)
-            mol = Chem.AddHs(mol, addCoords=True)
-            Chem.MolToMolFile(mol, fname)
+            if fname.endswith('.mol'):
+                mol = Chem.MolFromMolFile(fname, removeHs=False)
+                mol = Chem.AddHs(mol, addCoords=True)
+                Chem.MolToMolFile(mol, fname)
 
-        if fname.endswith('.sdf'):
-            mols = [Chem.AddHs(mol, addCoords=True) for mol in Chem.SDMolSupplier(fname, removeHs=False) if mol is not None]
-            w = Chem.SDWriter(fname[:-4] + '_H.sdf')
-            for mol in mols:
-                w.write(mol)
-            w.close()
+            if fname.endswith('.sdf'):
+                mols = [Chem.AddHs(mol, addCoords=True) for mol in Chem.SDMolSupplier(fname, removeHs=False) if mol is not None]
+                w = Chem.SDWriter(fname[:-4] + '_H.sdf')
+                for mol in mols:
+                    w.write(mol)
+                w.close()
 
 
 if __name__ == '__main__':

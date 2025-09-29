@@ -26,7 +26,7 @@ def get_coord(mol, indices=None):
     return tuple(output)
 
 
-def rmsd(mol, ref, chirality, align):
+def rmsd(mol, mol_name, ref, chirality, align):
 
     def rmsd_calc(r_coord, m_coord):
         s = 0
@@ -38,6 +38,7 @@ def rmsd(mol, ref, chirality, align):
     match_indices = mol.GetSubstructMatches(ref, uniquify=False, useChirality=chirality, maxMatches=10000)
     min_rmsd = float('inf')
     if not match_indices:
+        sys.stderr.write(f'No substructure matching was found, switching to MCS mode - {mol_name}\n')
         mcs = rdFMCS.FindMCS([mol, ref], threshold=1.0,
                              ringMatchesRingOnly=False, completeRingsOnly=False,
                              matchChiralTag=chirality)
@@ -143,7 +144,7 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
                     refmol = ref
 
                 if refmol is not None:
-                    mol_rmsd = rmsd(mol, refmol, chirality, align)
+                    mol_rmsd = rmsd(mol, mol_name, refmol, chirality, align)
                     if mol_rmsd is not None:
                         print(f'{mol_name}\t{i}\t{mol_rmsd}')
                     else:

@@ -38,8 +38,8 @@ def neutralize(input_fname, output_fname, ncpu, verbose):
 
     with open(output_fname, "wt") as f:
         for i, line in enumerate(pool.imap(neutralize_item,
-                              read_input(input_fname),
-                              chunksize=1), 1):
+                                           read_input(input_fname),
+                                           chunksize=1), 1):
             if line:
                 f.write(line)
             if verbose and i % 1000 == 0:

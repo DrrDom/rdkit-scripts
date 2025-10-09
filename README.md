@@ -87,6 +87,8 @@ Some scripts may require further dependencies.
 `mirror_mols` - return mirrored 3D input structure and optionally rename it. Useful for generation of enantiomers of molecules with axial/planar chirality.
   
 `murcko` - return Murcko scaffolds ignoring stereoconfiguration.  
+
+`neutralize` - neutralize input structures.  
   
 `physchem_calc` - calculate various physicochemical properties of input molecules (MW, logP, TPSA, QED, etc).  
   

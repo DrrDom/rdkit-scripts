@@ -10,13 +10,17 @@ from read_input import read_input
 
 
 def get_largest(mol, mol_name):
-    max_hac = 0
     output_frag = None
-    if mol is not None:
-        frags = Chem.GetMolFrags(mol, asMols=True)
-        for frag in frags:
-            if frag.GetNumHeavyAtoms() > max_hac:
-                output_frag = frag
+    try:
+        max_hac = 0
+        if mol is not None:
+            frags = Chem.GetMolFrags(mol, asMols=True)
+            for frag in frags:
+                if frag.GetNumHeavyAtoms() > max_hac:
+                    output_frag = frag
+    except Exception as e:
+        sys.stderr.write(f'Error: {e}\n')
+        sys.stderr.write(f'Molecule {mol_name} is skipped\n')
     return output_frag, mol_name
 
 

@@ -18,6 +18,7 @@ def get_largest(mol, mol_name):
             for frag in frags:
                 if frag.GetNumHeavyAtoms() > max_hac:
                     output_frag = frag
+                    max_hac = frag.GetNumHeavyAtoms()
     except Exception as e:
         sys.stderr.write(f'Error: {e}\n')
         sys.stderr.write(f'Molecule {mol_name} is skipped\n')

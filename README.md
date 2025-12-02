@@ -44,33 +44,34 @@ Some scripts may require further dependencies.
 
 ##### Manipulate with Mol objects (calc properties, generate conformers/stereoisomers, filter compounds, etc):  
 
-| Script                          | Description                                                                  |
-|---------------------------------|------------------------------------------------------------------------------|
-| `add_h`                         | Add hydrogens to molecules.                                                  |
-| `calc_center_rdkit`             | Calculate geometric center of atoms.                                         |
-| `count_undefined_stereocenters` | Count undefined stereocenters and print names + counts.                      |
-| `discard_compounds_rdkit`       | Remove multi-component & non-organic molecules.                              |
-| `draw_mols`                     | Return PNG images of molecules.                                              |
-| `filter_conf`                   | Filter conformers by RMS value.                                              |
-| `filter_conf_adv`               | Select representative conformers using clustering and advanced features.     |
-| `gen_conf_rdkit`                | Generate conformers.                                                         |
-| `gen_stereo_rdkit`              | Enumerate stereoisomers (tetrahedral & double bond).                         |
-| `gen_stereo_rdkit_native`       | Enumerate stereoisomers using RDKit’s built-in function.                     |
-| `get_map`                       | Calculate UMAP coordinates for input structures.                             |
-| `get_mol_center`                | Return geometric center of molecule.                                         |
-| `get_substr`                    | Filter molecules by SMARTS (supports multiple patterns & negative matches).  |
-| `get_total_charge`              | Calculate total formal charge.                                               |
-| `keep_largest`                  | Keep largest fragment by heavy atom count.                                   |
-| `mirror_mols`                   | Generate mirrored 3D structures (enantiomers).                               |
-| `murcko`                        | Return Murcko scaffolds ignoring stereochemistry.                            |
-| `neutralize`                    | Neutralize structures.                                                       |
-| `physchem_calc`                 | Calculate physicochemical properties (MW, logP, TPSA, QED, etc.).            |
-| `pmapper_descriptors`           | Calculate 3D pharmacophore descriptors (with `pmapper`).                     |
-| `remove_dupl_rdkit`             | Remove duplicates via InChi key comparison.                                  |
-| `rmsd_rdkit`                    | Calculate RMSD (MCS if atom matching fails, with symmetry checks).           |
-| `sanitize_rdkit`                | Remove molecules with sanitization errors + annotate stereocenters, etc.     |
-| `sphere_exclusion`              | Select diverse subset of compounds.                                          |
-| `test_pains`                    | Return list of molecules matching PAINS.                                     |
+| Script                          | Description                                                                |
+|---------------------------------|----------------------------------------------------------------------------|
+| `add_h`                         | Add hydrogens to molecules.                                                |
+| `calc_center_rdkit`             | Calculate geometric center of atoms.                                       |
+| `count_undefined_stereocenters` | Count undefined stereocenters and print names + counts.                    |
+| `discard_compounds_rdkit`       | Remove multi-component & non-organic molecules.                            |
+| `draw_mols`                     | Return PNG images of molecules.                                            |
+| `filter_conf`                   | Filter conformers by RMS value.                                            |
+| `filter_conf_adv`               | Select representative conformers using clustering and advanced features.   |
+| `gen_conf_rdkit`                | Generate conformers.                                                       |
+| `gen_stereo_rdkit`              | Enumerate stereoisomers (tetrahedral & double bond).                       |
+| `gen_stereo_rdkit_native`       | Enumerate stereoisomers using RDKit’s built-in function.                   |
+| `get_map`                       | Calculate UMAP coordinates for input structures.                           |
+| `get_mol_center`                | Return geometric center of molecule.                                       |
+| `get_substr`                    | Filter molecules by SMARTS (supports multiple patterns & negative matches). |
+| `get_total_charge`              | Calculate total formal charge.                                             |
+| `keep_largest`                  | Keep largest fragment by heavy atom count.                                 |
+| `mirror_mols`                   | Generate mirrored 3D structures (enantiomers).                             |
+| `murcko`                        | Return Murcko scaffolds ignoring stereochemistry.                          |
+| `neutralize`                    | Neutralize structures.                                                     |
+| `physchem_calc`                 | Calculate physicochemical properties (MW, logP, TPSA, QED, etc.).          |
+| `pmapper_descriptors`           | Calculate 3D pharmacophore descriptors (with `pmapper`).                   |
+| `remove_stereo`                 | Remove stereoconfiguration from all centers.                               |
+| `remove_dupl_rdkit`             | Remove duplicates via InChi key comparison.                                |
+| `rmsd_rdkit`                    | Calculate RMSD (MCS if atom matching fails, with symmetry checks).         |
+| `sanitize_rdkit`                | Remove molecules with sanitization errors + annotate stereocenters, etc.   |
+| `sphere_exclusion`              | Select diverse subset of compounds.                                        |
+| `test_pains`                    | Return list of molecules matching PAINS.                                   |
 
 ##### Supplementary scripts:
 

@@ -98,12 +98,13 @@ def compare_smiles(smi1, smi2):
 
 def process_line(line):
     # line should have SMILES, id, protonated SMILES 1, protonated SMILES 2
-    output = None
+    output = []
     line = line.strip().split()
     # print(line)
     items = compare_smiles(line[2], line[3])
     if items:
-        output = line[0] + '\t' + line[1] + '\t' + '\t'.join(map(str, items)) + '\n'
+        for item in items:
+            output.append(line[0] + '\t' + line[1] + '\t' + '\t'.join(map(str, item)) + '\n')
     return output
 
 
@@ -127,10 +128,11 @@ def main():
     with open(args.input) as f:
         with open(args.output, 'wt') as fout:
             header = f.readline().strip().split()
-            fout.write(f'smi\tid\tpattern\t{header[2]}_charge\t{header[3]}\n')
+            fout.write(f'smi\tid\tpattern\t{header[2]}_charge\t{header[3]}_charge\n')
             for i, res in enumerate(pool.imap(process_line, f, chunksize=10), 1):
                 if res:
-                    fout.write(res)
+                    for item in res:
+                        fout.write(item)
                 if i % 1000 == 0:
                     sys.stderr.write(f'\rProcessed {i} lines')
 

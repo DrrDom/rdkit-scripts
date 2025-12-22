@@ -42,7 +42,8 @@ def main():
     parser.add_argument("--metric", type=str, default="jaccard", help="UMAP distance metric")
     args = parser.parse_args()
 
-    fps = compute_fps([m for m, mol_name in read_input(args.input)], args.fingerprint, args.n_bits, args.radius)
+    mols, mol_names = zip(*(read_input(args.input)))
+    fps = compute_fps(mols, args.fingerprint, args.n_bits, args.radius)
 
     reducer = umap.UMAP(
         n_neighbors=args.n_neighbors,
@@ -52,13 +53,11 @@ def main():
     )
     coords = reducer.fit_transform(fps)
 
-    with open(args.input) as f:
-        with open(args.output, "w") as out:
-            for line, (x, y) in zip(f, coords):
-                tmp = line.strip().split()[:2]
-                x = str(round(x, 4))
-                y = str(round(y, 4))
-                out.write("\t".join(tmp) + '\t' + x + '\t' + y + '\n')
+    with open(args.output, "w") as out:
+        for mol_name, (x, y) in zip(mol_names, coords):
+            x = str(round(x, 4))
+            y = str(round(y, 4))
+            out.write(mol_name + '\t' + x + '\t' + y + '\n')
 
 
 if __name__ == "__main__":

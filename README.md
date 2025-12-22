@@ -57,7 +57,7 @@ Some scripts may require further dependencies.
 | `gen_conf_rdkit`                | Generate conformers.                                                                                                       |
 | `gen_stereo_rdkit`              | Enumerate stereoisomers (tetrahedral & double bond).                                                                       |
 | `gen_stereo_rdkit_native`       | Enumerate stereoisomers using RDKit’s built-in function.                                                                   |
-| `get_map`                       | Calculate UMAP coordinates for input structures.                                                                           |
+| `get_map`                       | Calculate UMAP/t-SNE coordinates for input structures.                                                                     |
 | `get_mol_center`                | Return geometric center of molecule.                                                                                       |
 | `get_substr`                    | Filter molecules by SMARTS (supports multiple patterns & negative matches).                                                |
 | `get_total_charge`              | Calculate total formal charge.                                                                                             |

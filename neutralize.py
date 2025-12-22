@@ -12,6 +12,7 @@ pattern = Chem.MolFromSmarts("[+1!h0!$([*]~[-1,-2,-3,-4]),-1!$([*]~[+1,+2,+3,+4]
 
 def neutralize_atoms(mol):
     # https://www.rdkit.org/docs/Cookbook.html#neutralizing-molecules
+    mol = Chem.RemoveHs(mol)
     at_matches = mol.GetSubstructMatches(pattern)
     at_matches_list = [y[0] for y in at_matches]
     if len(at_matches_list) > 0:
@@ -49,7 +50,7 @@ def neutralize(input_fname, output_fname, ncpu, verbose):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Neutralize input structures.')
+    parser = argparse.ArgumentParser(description='Neutralize input structures. Explicit hydrogens will be removed')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, type=str,
                         help='input SDF or SMILES file.')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=True, type=str,

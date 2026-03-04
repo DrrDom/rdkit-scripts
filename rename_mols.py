@@ -35,7 +35,7 @@ def merge_confs(mols):
     return main_mol
 
 
-def rename_molecules(input_fname, output_fname, names_fname, prefix):
+def rename_molecules(input_fname, output_fname, names_fname, prefix, drop_duplicates):
 
     mols_dict = defaultdict(list)  # inchi: [mol, ...]
     mol_names = OrderedDict()  # inchi: new_name
@@ -53,7 +53,10 @@ def rename_molecules(input_fname, output_fname, names_fname, prefix):
     w = Chem.SDWriter(output_fname)
     try:
         for inchi, mols in mols_dict.items():
-            mol = merge_confs(mols)
+            if drop_duplicates:
+                mol = mols[0]
+            else:
+                mol = merge_confs(mols)
             if mol:
                 mol.SetProp('_Name', mol_names[inchi])
                 for c in mol.GetConformers():
@@ -78,9 +81,11 @@ def main():
                              'lines. The order of molecule names will be kept the same as in input SDF.')
     parser.add_argument('-p', '--prefix', metavar='STRING', required=False, type=str, default='MOL',
                         help='prefix to add to molecule names. Default: MOL.')
+    parser.add_argument('-d', '--drop-duplicates', action='store_true', required=False, default=False,
+                        help='remove duplicated structures (e.g. keep only one conformer). Default: False.')
     args = parser.parse_args()
 
-    rename_molecules(args.input, args.output, args.names, args.prefix)
+    rename_molecules(args.input, args.output, args.names, args.prefix, args.drop_duplicates)
 
 
 if __name__ == '__main__':

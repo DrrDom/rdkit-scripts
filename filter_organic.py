@@ -6,14 +6,26 @@ import argparse
 import sys
 from multiprocessing import Pool, cpu_count
 from rdkit import Chem
-from read_input import read_input
 
 # H, B, C, N, O, F, P, S, Cl, Br, I
 organic_atoms = {1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53}
 
 
+def read_smiles(fname):
+    with open(fname) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            smi = parts[0]
+            name = parts[1] if len(parts) > 1 else smi
+            yield smi, name
+
+
 def process_mol(items):
-    mol, mol_name = items
+    smi, mol_name = items
+    mol = Chem.MolFromSmiles(smi)
     if mol is None:
         return None
     elm = set(a.GetAtomicNum() for a in mol.GetAtoms())
@@ -31,7 +43,7 @@ def calc(input_fname, organic_fname, inorganic_fname, ncpu, verbose):
     n_organic = 0
     n_inorganic = 0
 
-    for i, res in enumerate(pool.imap(process_mol, read_input(input_fname)), 1):
+    for i, res in enumerate(pool.imap(process_mol, read_smiles(input_fname)), 1):
         if res is None:
             continue
         line, is_organic = res
@@ -61,7 +73,7 @@ def main():
     parser = argparse.ArgumentParser(description='Split input structures into organic and inorganic sets. '
                                                  'Organic atoms are: H, B, C, N, O, F, P, S, Cl, Br, I.')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True,
-                        help='input SDF or SMILES file.')
+                        help='input SMILES file (no header; first column SMILES, optional second column name).')
     parser.add_argument('-o', '--output', metavar='FILENAME', required=False, default=None,
                         help='output SMILES file for organic structures (only atoms from H, B, C, N, O, F, P, S, Cl, Br, I).')
     parser.add_argument('-d', '--inorganic', metavar='FILENAME', required=False, default=None,

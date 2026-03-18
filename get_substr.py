@@ -8,6 +8,7 @@
 # license         : 
 #==============================================================================
 
+import os
 import sys
 import argparse
 from rdkit import Chem
@@ -16,7 +17,23 @@ from functools import partial
 from multiprocessing import Pool, cpu_count
 
 
-def match(mol, mol_title, patterns, negate):
+def read_smiles_text(fname, sep='\t'):
+    with open(fname) as f:
+        for line in f:
+            tmp = line.strip().split(sep)
+            if tmp and tmp[0]:
+                smi = tmp[0]
+                mol_title = tmp[1] if len(tmp) > 1 else smi
+                yield smi, mol_title
+
+
+def match(mol_or_smi, mol_title, patterns, negate):
+    if isinstance(mol_or_smi, str):
+        mol = Chem.MolFromSmiles(mol_or_smi)
+        if mol is None:
+            return False, mol_or_smi, mol_title
+    else:
+        mol = mol_or_smi
     res = [mol.HasSubstructMatch(pat) for pat in patterns]
     if (not negate and any(res)) or (negate and not any(res)):
         return True, Chem.MolToSmiles(mol, isomericSmiles=True), mol_title
@@ -60,12 +77,20 @@ def main():
 
     patt = [Chem.MolFromSmarts(p) for p in pattern]
 
+    ext = os.path.splitext(in_fname)[1].lower().lstrip('.')
+    is_smiles = ext in ('smi', 'smiles')
+
+    if is_smiles:
+        reader = read_smiles_text(in_fname)
+    else:
+        reader = read_input(in_fname, id_field_name=field_name)
+
     if ncpu == 1:
 
         with open(out_fname, 'wt') as f:
             match_counter = 0
-            for i, (mol, mol_title) in enumerate(read_input(in_fname, id_field_name=field_name)):
-                res = match(mol, mol_title, patt, neg)
+            for i, (mol_or_smi, mol_title) in enumerate(reader):
+                res = match(mol_or_smi, mol_title, patt, neg)
                 if res[0]:
                     f.write('%s\t%s\n' % res[1:])
                     f.flush()
@@ -78,8 +103,7 @@ def main():
         pool = Pool(max(1, min(ncpu, cpu_count())))
         with open(out_fname, 'wt') as f:
             match_counter = 0
-            for i, res in enumerate(pool.imap(partial(match_mp, patterns=patt, negate=neg),
-                                              read_input(in_fname, id_field_name=field_name)), 1):
+            for i, res in enumerate(pool.imap(partial(match_mp, patterns=patt, negate=neg), reader), 1):
                 if res[0]:
                     f.write('%s\t%s\n' % res[1:])
                     f.flush()

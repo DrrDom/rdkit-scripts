@@ -42,7 +42,7 @@ def main():
                         default="morgan", help="Type of fingerprint to compute")
     parser.add_argument("--radius", type=int, default=2, help="Radius for Morgan fingerprints")
     parser.add_argument("--n_bits", type=int, default=2048, help="Number of bits in fingerprint")
-    parser.add_argument("--n_neighbors", type=float, default=15, help="UMAP n_neighbors / t-SNE perplexity")
+    parser.add_argument("--n_neighbors", type=int, default=15, help="UMAP n_neighbors / t-SNE perplexity")
     parser.add_argument("--min_dist", type=float, default=0.1, help="UMAP min_dist parameter")
     parser.add_argument("--metric", type=str, default="jaccard", help="UMAP distance metric")
     args = parser.parse_args()

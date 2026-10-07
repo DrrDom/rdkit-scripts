@@ -8,6 +8,7 @@ import re
 import sys
 
 from itertools import product
+from multiprocessing import Pool, cpu_count
 
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
@@ -75,7 +76,61 @@ def rmsd(mol, mol_name, ref, chirality, align):
     return round(min_rmsd, 3)
 
 
-def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex, align):
+def calc_output_row(data):
+    if data[0] == 'line':
+        return data[1]
+
+    _, mol, mol_name, mol_idx, refmol, refmol_name, chirality, align = data
+    mol_rmsd = rmsd(mol, mol_name, refmol, chirality, align)
+    if refmol_name is None:
+        if mol_rmsd is not None:
+            return f'{mol_name}\t{mol_idx}\t{mol_rmsd}'
+        return f'{mol_name}\t{mol_idx}\tNo matches'
+    if mol_rmsd is not None:
+        return f'{mol_name}\t{mol_idx}\t{refmol_name}\t{mol_rmsd}'
+    return f'{mol_name}\t{mol_idx}\t{refmol_name}\tNo matches'
+
+
+def write_output_rows(rows, pool):
+    if pool is None:
+        output_rows = map(calc_output_row, rows)
+    else:
+        output_rows = pool.imap(calc_output_row, rows)
+    for row in output_rows:
+        print(row)
+
+
+def iter_output_row_data(in_fname, mols, ref, chirality, regex, align):
+    for i, mol in enumerate(mols, 1):
+        if mol is None:
+            yield 'line', f'{in_fname}\t{i}\tCannot read structure'
+        else:
+            # assign printed mol name from mol object or file name
+            mol_name = mol.GetProp('_Name')
+            if not mol_name:
+                if regex is not None:
+                    mol_name = re.search(regex, os.path.basename(in_fname)).group()
+                else:
+                    mol_name = os.path.basename(in_fname)
+            # assign ref mol object
+            if isinstance(ref, list):
+                for refmol_name, refmol in ref:
+                    yield 'rmsd', mol, mol_name, i, refmol, refmol_name, chirality, align
+            elif isinstance(ref, dict):
+                try:
+                    refmol = ref[mol.GetProp('_Name')]
+                except KeyError:
+                    sys.stderr.write(f'Molecule with name {mol.GetProp("_Name")} is not available '
+                                     f'in the reference SDF file\n')
+                    yield 'line', f'{mol_name}\t{i}\tNo matches'
+                else:
+                    yield 'rmsd', mol, mol_name, i, refmol, None, chirality, align
+            else:
+                yield 'rmsd', mol, mol_name, i, ref, None, chirality, align
+
+
+def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirality, regex, align,
+                ignore_name_matching, ncpu):
 
     if ref_name.lower().endswith('.mol2'):
         ref = Chem.MolFromMol2File(ref_name, removeHs=True)
@@ -84,7 +139,10 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
     elif ref_name.lower().endswith('.mol'):
         ref = Chem.MolFromMolFile(ref_name, removeHs=True)
     elif ref_name.lower().endswith('.sdf'):
-        ref = {m.GetProp('_Name'): m for m in Chem.SDMolSupplier(ref_name) if m}
+        if ignore_name_matching:
+            ref = [(m.GetProp('_Name'), m) for m in Chem.SDMolSupplier(ref_name) if m]
+        else:
+            ref = {m.GetProp('_Name'): m for m in Chem.SDMolSupplier(ref_name) if m}
     else:
         sys.stderr.write('Wrong format of the reference file. Only MOL2, PDBQT and SDF files are allowed.\n')
         raise ValueError
@@ -104,57 +162,38 @@ def main_params(input_fnames, input_smi, output_fname, ref_name, refsmi, chirali
                     sys.stderr.write(
                         f'Line "{line}" in input smiles does not have two fields - SMILES and mol name. Skipped.\n')
 
-    for in_fname in input_fnames:
+    nprocess = max(1, min(ncpu, cpu_count()))
+    pool = Pool(nprocess) if nprocess > 1 else None
 
-        if in_fname.lower().endswith('.mol2'):
-            mols = [Chem.MolFromMol2File(in_fname)]
-        elif in_fname.lower().endswith('.pdbqt') or in_fname.endswith('.pdbqt_out'):
-            if regex is not None:
-                mols = read_pdbqt(in_fname, smis[re.search(regex, os.path.basename(in_fname)).group()], removeHs=True)
-            else:
-                mols = read_pdbqt(in_fname, smis[os.path.splitext(os.path.basename(in_fname))[0]], removeHs=True)
-        elif in_fname.lower().endswith('.sdf'):
-            mols = [mol for mol, mol_name in read_input(in_fname)]
-        else:
-            sys.stderr.write(f'Wrong format of the input file - {in_fname}. '
-                             f'Only MOL2, PDBQT and SDF files are allowed.\n')
-            raise ValueError
+    try:
+        for in_fname in input_fnames:
 
-        for i, mol in enumerate(mols, 1):
-            if mol is None:
-                print(f'{in_fname}\t{i}\tCannot read structure')
-            else:
-                # assign printed mol name from mol object or file name
-                mol_name = mol.GetProp('_Name')
-                if not mol_name:
-                    if regex is not None:
-                        mol_name = re.search(regex, os.path.basename(in_fname)).group()
-                    else:
-                        mol_name = os.path.basename(in_fname)
-                # assign ref mol object
-                if isinstance(ref, dict):
-                    try:
-                        refmol = ref[mol.GetProp('_Name')]
-                    except KeyError:
-                        sys.stderr.write(f'Molecule with name {mol.GetProp("_Name")} is not available '
-                                         f'in the reference SDF file\n')
-                        print(f'{mol_name}\t{i}\tNo matches')
-                        refmol = None
+            if in_fname.lower().endswith('.mol2'):
+                mols = [Chem.MolFromMol2File(in_fname)]
+            elif in_fname.lower().endswith('.pdbqt') or in_fname.endswith('.pdbqt_out'):
+                if regex is not None:
+                    mols = read_pdbqt(in_fname, smis[re.search(regex, os.path.basename(in_fname)).group()], removeHs=True)
                 else:
-                    refmol = ref
+                    mols = read_pdbqt(in_fname, smis[os.path.splitext(os.path.basename(in_fname))[0]], removeHs=True)
+            elif in_fname.lower().endswith('.sdf'):
+                mols = [mol for mol, mol_name in read_input(in_fname)]
+            else:
+                sys.stderr.write(f'Wrong format of the input file - {in_fname}. '
+                                 f'Only MOL2, PDBQT and SDF files are allowed.\n')
+                raise ValueError
 
-                if refmol is not None:
-                    mol_rmsd = rmsd(mol, mol_name, refmol, chirality, align)
-                    if mol_rmsd is not None:
-                        print(f'{mol_name}\t{i}\t{mol_rmsd}')
-                    else:
-                        print(f'{mol_name}\t{i}\tNo matches')
+            write_output_rows(iter_output_row_data(in_fname, mols, ref, chirality, regex, align), pool)
+    finally:
+        if pool is not None:
+            pool.close()
+            pool.join()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='''Calc RMSD between a reference molecule and docked poses.
-                                                 If reference molecule is not substructure of the docked molecule
-                                                 maximum common substructure is used.''')
+    parser = argparse.ArgumentParser(description='''Calc RMSD between a reference molecule and an input molecule (docked poses).
+                                                 If reference molecule is not substructure of the input molecule
+                                                 maximum common substructure is used. SDF references can also be
+                                                 compared all-to-all with input molecules.''')
     parser.add_argument('-i', '--input', metavar='FILENAME', required=True, nargs='*',
                         help='input MOL2/PDBQT/SDF file(s) to compare with a reference molecule or molecules.')
     parser.add_argument('--input_smi', metavar='FILENAME', required=False, default=None,
@@ -182,6 +221,11 @@ def main():
     parser.add_argument('-x', '--nochirality', action='store_true', default=False,
                         help='choose this option if you want to omit matching chirality in substructure search. '
                              'By default chirality is considered.')
+    parser.add_argument('--ignore_name_matching', action='store_true', default=False,
+                        help='for SDF reference files, compare each input molecule to each reference molecule '
+                             'instead of matching molecules by name.')
+    parser.add_argument('-c', '--ncpu', metavar='INTEGER', required=False, default=1, type=int,
+                        help='number of cpus to use for calculation. Default: 1.')
 
     args = parser.parse_args()
     if (args.refsmi is not None) and (args.refsmi.lower().endswith('.smi') or args.refsmi.lower().endswith('.smiles')):
@@ -190,7 +234,8 @@ def main():
     else:
         refsmi = args.refsmi
 
-    main_params(args.input, args.input_smi, args.output, args.reference, refsmi, not args.nochirality, args.regex, args.align)
+    main_params(args.input, args.input_smi, args.output, args.reference, refsmi, not args.nochirality, args.regex,
+                args.align, args.ignore_name_matching, args.ncpu)
 
 
 if __name__ == '__main__':

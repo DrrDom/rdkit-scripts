@@ -80,6 +80,7 @@ Some scripts may require further dependencies.
 | `sanitize_rdkit`                | Remove molecules with sanitization errors + annotate stereocenters, etc.                   |
 | `sphere_exclusion`              | Select diverse subset of compounds.                                                        |
 | `test_pains`                    | Return list of molecules matching PAINS.                                                   |
+| `volume_overlap`                | Calculate volume overlap of query molecules with reference ones without alignment.         |
 
 ##### Supplementary scripts:
 

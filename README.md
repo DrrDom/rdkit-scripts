@@ -76,6 +76,7 @@ Some scripts may require further dependencies.
 | `remove_isotopes`               | Remove isotope labels and removable explicit hydrogens.                                    |
 | `remove_stereo`                 | Remove stereoconfiguration from all centers.                                               |
 | `remove_dupl_rdkit`             | Remove duplicates via InChi key comparison.                                                |
+| `rgroups`                       | R-group decomposition with automatically detected core (MCS) and symmetry warnings.        |
 | `rmsd_rdkit`                    | Calculate RMSD (MCS if atom matching fails, with symmetry checks).                         |
 | `sanitize_rdkit`                | Remove molecules with sanitization errors + annotate stereocenters, etc.                   |
 | `sphere_exclusion`              | Select diverse subset of compounds.                                                        |
